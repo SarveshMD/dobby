@@ -73,7 +73,7 @@ A high-performance, authenticated URL shortener and redirect engine built with A
 ### Setup
 ```bash
 # Clone the repository
-git clone [https://github.com/SarveshMD/dobby.git](https://github.com/SarveshMD/dobby.git)
+git clone https://github.com/SarveshMD/dobby.git
 cd dobby
 
 # Restore dependencies
@@ -86,4 +86,4 @@ dotnet ef database update
 dotnet run
 ```
 
-> created by gemini
+Gemini wrote this.
