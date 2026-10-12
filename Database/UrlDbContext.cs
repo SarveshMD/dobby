@@ -5,7 +5,7 @@ namespace Dobby.Database;
 
 public class UrlDbContext : DbContext
 {
-    public UrlDbContext(DbContextOptions<UrlDbContext> options)
+    public UrlDbContext(DbContextOptions<UrlDbContext> options) : base(options)
     {
     }
 
