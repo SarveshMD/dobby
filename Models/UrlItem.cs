@@ -1,11 +1,11 @@
 namespace Dobby.Models;
 
-class UrlItem
+public class UrlItem
 {
-    Guid Id;
-    string OriginalUrl { get; set; } = "";
-    string ShortUrl { get; set; } = "";
-    DateTimeOffset CreatedAt;
+    public Guid Id { get; set; }
+    public string OriginalUrl { get; set; } = "";
+    public string ShortUrl { get; set; } = "";
+    public DateTimeOffset CreatedAt;
 
     private UrlItem() { }
 
