@@ -18,10 +18,11 @@ A high-performance, authenticated URL shortener and redirect engine built with A
 
 ## Roadmap & Implementation Order
 
-- [ ] **Phase 1: Project Setup & Domain Modeling**
+- [x] **Phase 1: Project Setup & Domain Modeling**
   - Initialize clean ASP.NET Core Web API solution
   - Configure EF Core with PostgreSQL and snake_case naming conventions
   - Define `ShortenedUrl` and `User` models with relational integrity
+  > Skipped `User` model for now
 - [ ] **Phase 2: Base62 Encoding Engine**
   - Implement bidirectional Base62 converter (numeric ID $\leftrightarrow$ short string)
   - Write unit tests verifying edge cases, boundary collisions, and reversibility
