@@ -2,10 +2,10 @@ namespace Dobby.Models;
 
 public class UrlItem
 {
-    public Guid Id { get; set; }
-    public string OriginalUrl { get; set; } = "";
-    public string ShortUrl { get; set; } = "";
-    public DateTimeOffset CreatedAt;
+    public int Id { get; private set; }
+    public string OriginalUrl { get; private set; } = "";
+    public string ShortUrl { get; private set; } = "";
+    public DateTimeOffset CreatedAt { get; private set; }
 
     private UrlItem() { }
 
@@ -13,6 +13,6 @@ public class UrlItem
     {
         OriginalUrl = originalUrl;
         ShortUrl = shortUrl;
-        CreatedAt = DateTime.UtcNow;
+        CreatedAt = DateTimeOffset.UtcNow;
     }
 }

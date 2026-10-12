@@ -7,7 +7,7 @@ public record CreateUrlItemDto(
 );
 
 public record ResponseUrlItemDto(
-    Guid Id,
+    int Id,
     string OriginalUrl,
     string ShortUrl,
     DateTimeOffset CreatedAt
