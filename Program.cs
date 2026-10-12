@@ -1,6 +1,7 @@
 using System.Data;
 using Dobby.Database;
 using Dobby.DTOs;
+using Dobby.Services;
 using Dobby.Validators;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,11 @@ builder.Services.AddDbContext<UrlDbContext>(optionsBuilder =>
     }
 });
 
+var secretKeyString = builder.Configuration["UrlShortener:SecretKey"]
+    ?? throw new InvalidOperationException("Skip32 secret key is missing from configuration");
+
+builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(_ => new UrlShortener(secretKeyString));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -47,7 +53,8 @@ app.MapPost("/api/urls", async (
     UrlDbContext db,
     CreateUrlItemDto dto,
     CancellationToken ct,
-    CreateUrlItemDtoValidator validator
+    CreateUrlItemDtoValidator validator,
+    IUrlShortenerService urlShortener
 ) =>
 {
     var validationResult = validator.Validate(dto);
@@ -66,7 +73,13 @@ app.MapPost("/api/urls", async (
 
     var id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
 
-    return Results.Ok(id);
+    string encodedUrl = urlShortener.Encode(id);
+
+    return Results.Ok(new
+    {
+        Id = id,
+        EncodedURL = encodedUrl
+    });
 });
 
 app.Run();
