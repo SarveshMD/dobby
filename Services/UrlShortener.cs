@@ -28,19 +28,25 @@ public class UrlShortener : IUrlShortenerService
     {
         uint value = (uint)_skip32.Encrypt(num);
 
-        StringBuilder sb = new StringBuilder();
+        char[] res = new char[6];
 
+        int idx = 5;
         while (value > 0)
         {
             int mod = (int)(value % 62);
             char currChar = _sixtyTwoBytes[mod];
-            sb.Append(currChar);
+            res[idx] = currChar;
+            idx--;
             value /= 62;
         }
 
-        string res = new string(sb.ToString().PadRight(6, '0').Reverse().ToArray());
+        while (idx >= 0)
+        {
+            res[idx] = '0';
+            idx--;
+        }
 
-        return res;
+        return new string(res);
     }
 
     public int Decode(string code)
