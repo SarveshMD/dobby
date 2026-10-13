@@ -8,21 +8,19 @@ namespace Dobby.Services;
 
 public class UrlShortener : IUrlShortenerService
 {
-    private readonly string _secretKey = "WHATEVER42";
-    private readonly byte[] _secretKeyBytes = [];
     private readonly Skip32Cipher _skip32 = null!;
     private readonly string _sixtyTwoBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private readonly Dictionary<char, int> _decodeBase62 = null!;
+    private readonly int[] _lookupTable = new int[128];
 
     public UrlShortener(string secretKey)
     {
-        _secretKey = secretKey;
-        _secretKeyBytes = Encoding.UTF8.GetBytes(_secretKey);
-        _skip32 = new Skip32Cipher(_secretKeyBytes);
-        _decodeBase62 = new Dictionary<char, int>();
+        _skip32 = new Skip32Cipher(Encoding.UTF8.GetBytes(secretKey));
+
+        Array.Fill(_lookupTable, -1);
+
         for (int i = 0; i < 62; i++)
         {
-            _decodeBase62[_sixtyTwoBytes[i]] = i;
+            _lookupTable[_sixtyTwoBytes[i]] = i;
         }
     }
 
@@ -51,7 +49,7 @@ public class UrlShortener : IUrlShortenerService
 
         foreach (char c in code)
         {
-            scrambled = (scrambled * 62) + (uint)_decodeBase62[c];
+            scrambled = (scrambled * 62) + (uint)_lookupTable[c];
         }
 
         int encrypted = unchecked((int)scrambled);
