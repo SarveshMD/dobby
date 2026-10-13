@@ -1,3 +1,5 @@
+using System.Numerics;
+using System.Security.Cryptography.Xml;
 using System.Text;
 using Eleven41.Skip32;
 
@@ -10,12 +12,18 @@ public class UrlShortener : IUrlShortenerService
     private readonly byte[] _secretKeyBytes = [];
     private readonly Skip32Cipher _skip32 = null!;
     private readonly string _sixtyTwoBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private readonly Dictionary<char, int> _decodeBase62 = null!;
 
     public UrlShortener(string secretKey)
     {
         _secretKey = secretKey;
         _secretKeyBytes = Encoding.UTF8.GetBytes(_secretKey);
         _skip32 = new Skip32Cipher(_secretKeyBytes);
+        _decodeBase62 = new Dictionary<char, int>();
+        for (int i = 0; i < 62; i++)
+        {
+            _decodeBase62[_sixtyTwoBytes[i]] = i;
+        }
     }
 
     public string Encode(int num)
@@ -39,7 +47,16 @@ public class UrlShortener : IUrlShortenerService
 
     public int Decode(string code)
     {
-        int scrambledValue = int.Parse(code);
-        return _skip32.Decrypt(scrambledValue);
+        uint scrambled = 0;
+
+        foreach (char c in code)
+        {
+            scrambled = (scrambled * 62) + (uint)_decodeBase62[c];
+        }
+
+        int encrypted = unchecked((int)scrambled);
+        int res = _skip32.Decrypt(encrypted);
+
+        return res;
     }
 }

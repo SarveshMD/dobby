@@ -75,12 +75,13 @@ app.MapPost("/api/urls", async (
 
     string encodedUrl = urlShortener.Encode(id);
 
-    // int decodedNumber = urlShortener.Decode(encodedUrl);
+    int decodedNumber = urlShortener.Decode(encodedUrl);
 
     return Results.Ok(new
     {
         Id = id,
         EncodedURL = encodedUrl,
+        DecodedNumber = decodedNumber
     });
 });
 
