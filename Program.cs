@@ -89,4 +89,28 @@ app.MapPost("/api/urls", async (
     return Results.Created($"/{encodedUrl}", res);
 });
 
+app.MapGet("/{shortUrl}", async (
+    string shortUrl,
+    UrlDbContext db,
+    IValidator<GetShortUrlRequest> validator
+) =>
+{
+    var validationResult = validator.Validate(new GetShortUrlRequest(shortUrl));
+
+    if (!validationResult.IsValid)
+    {
+        return Results.ValidationProblem(validationResult.ToDictionary());
+    }
+
+    var urlItem = await db.UrlItems
+        .FirstOrDefaultAsync(item => item.ShortUrl == shortUrl);
+
+    if (urlItem is null)
+    {
+        return Results.NotFound($"/{shortUrl} was not found");
+    }
+
+    return Results.Ok(urlItem);
+});
+
 app.Run();

@@ -21,3 +21,5 @@ public record ResponseUrlItemDto(
         );
     }
 };
+
+public record GetShortUrlRequest(string ShortUrl);
