@@ -77,6 +77,7 @@ app.MapPost("/api/urls", async (
     string encodedUrl = urlShortener.Encode(id);
 
     var urlItem = new UrlItem(
+        id,
         dto.OriginalUrl,
         encodedUrl
     );
@@ -92,7 +93,8 @@ app.MapPost("/api/urls", async (
 app.MapGet("/{shortUrl}", async (
     string shortUrl,
     UrlDbContext db,
-    IValidator<GetShortUrlRequest> validator
+    IValidator<GetShortUrlRequest> validator,
+    IUrlShortenerService urlShortener
 ) =>
 {
     var validationResult = validator.Validate(new GetShortUrlRequest(shortUrl));
@@ -102,8 +104,10 @@ app.MapGet("/{shortUrl}", async (
         return Results.ValidationProblem(validationResult.ToDictionary());
     }
 
+    int key = urlShortener.Decode(shortUrl);
+
     var urlItem = await db.UrlItems
-        .FirstOrDefaultAsync(item => item.ShortUrl == shortUrl);
+        .FindAsync(key);
 
     if (urlItem is null)
     {
