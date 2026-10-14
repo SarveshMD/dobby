@@ -58,7 +58,7 @@ app.MapPost("/api/urls", async (
     IUrlShortenerService urlShortener
 ) =>
 {
-    var validationResult = validator.Validate(dto);
+    var validationResult = await validator.ValidateAsync(dto, ct);
 
     if (!validationResult.IsValid)
     {
@@ -69,10 +69,10 @@ app.MapPost("/api/urls", async (
 
     if (cmd.Connection!.State != ConnectionState.Open)
     {
-        await cmd.Connection.OpenAsync();
+        await cmd.Connection.OpenAsync(ct);
     }
 
-    var id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    var id = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
 
     string encodedUrl = urlShortener.Encode(id);
 
@@ -82,7 +82,7 @@ app.MapPost("/api/urls", async (
     );
 
     db.UrlItems.Add(urlItem);
-    await db.SaveChangesAsync();
+    await db.SaveChangesAsync(ct);
 
     var res = ResponseUrlItemDto.FromEntity(urlItem);
 
@@ -93,12 +93,13 @@ app.MapGet("/{shortUrl}", async (
     string shortUrl,
     UrlDbContext db,
     IValidator<GetShortUrlRequest> validator,
-    IUrlShortenerService urlShortener
+    IUrlShortenerService urlShortener,
+    CancellationToken ct
 ) =>
 {
     Console.WriteLine($"ShortURL from URL: {shortUrl}");
 
-    var validationResult = validator.Validate(new GetShortUrlRequest(shortUrl));
+    var validationResult = await validator.ValidateAsync(new GetShortUrlRequest(shortUrl), ct);
 
     if (!validationResult.IsValid)
     {
@@ -108,7 +109,7 @@ app.MapGet("/{shortUrl}", async (
     int key = urlShortener.Decode(shortUrl);
 
     var urlItem = await db.UrlItems
-        .FindAsync(key);
+        .FindAsync(key, ct);
 
     if (urlItem is null)
     {
