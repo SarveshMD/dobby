@@ -9,8 +9,7 @@ public record CreateUrlItemDto(
 public record ResponseUrlItemDto(
     int Id,
     string OriginalUrl,
-    string ShortUrl,
-    DateTimeOffset CreatedAt
+    string ShortUrl
 )
 {
     public static ResponseUrlItemDto FromEntity(UrlItem item)
@@ -18,8 +17,7 @@ public record ResponseUrlItemDto(
         return new ResponseUrlItemDto(
             item.Id,
             item.OriginalUrl,
-            item.ShortUrl,
-            item.CreatedAt
+            item.ShortUrl
         );
     }
 };

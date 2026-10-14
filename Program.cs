@@ -1,6 +1,7 @@
 using System.Data;
 using Dobby.Database;
 using Dobby.DTOs;
+using Dobby.Models;
 using Dobby.Services;
 using Dobby.Validators;
 using FluentValidation;
@@ -75,14 +76,17 @@ app.MapPost("/api/urls", async (
 
     string encodedUrl = urlShortener.Encode(id);
 
-    int decodedNumber = urlShortener.Decode(encodedUrl);
+    var urlItem = new UrlItem(
+        dto.OriginalUrl,
+        encodedUrl
+    );
 
-    return Results.Ok(new
-    {
-        Id = id,
-        EncodedURL = encodedUrl,
-        DecodedNumber = decodedNumber
-    });
+    db.UrlItems.Add(urlItem);
+    await db.SaveChangesAsync();
+
+    var res = ResponseUrlItemDto.FromEntity(urlItem);
+
+    return Results.Created($"/{encodedUrl}", res);
 });
 
 app.Run();
