@@ -41,19 +41,8 @@ namespace dobby.Migrations
                         .HasColumnType("character varying(2048)")
                         .HasColumnName("original_url");
 
-                    b.Property<string>("ShortUrl")
-                        .IsRequired()
-                        .HasMaxLength(6)
-                        .HasColumnType("character(6)")
-                        .HasColumnName("short_url")
-                        .IsFixedLength();
-
                     b.HasKey("Id")
                         .HasName("pk_url_items");
-
-                    b.HasIndex("ShortUrl")
-                        .IsUnique()
-                        .HasDatabaseName("ix_url_items_short_url");
 
                     b.ToTable("url_items", (string)null);
                 });

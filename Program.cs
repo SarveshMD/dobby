@@ -78,8 +78,7 @@ app.MapPost("/api/urls", async (
 
     var urlItem = new UrlItem(
         id,
-        dto.OriginalUrl,
-        encodedUrl
+        dto.OriginalUrl
     );
 
     db.UrlItems.Add(urlItem);
@@ -97,6 +96,8 @@ app.MapGet("/{shortUrl}", async (
     IUrlShortenerService urlShortener
 ) =>
 {
+    Console.WriteLine($"ShortURL from URL: {shortUrl}");
+
     var validationResult = validator.Validate(new GetShortUrlRequest(shortUrl));
 
     if (!validationResult.IsValid)

@@ -18,14 +18,6 @@ public class UrlItemConfiguration : IEntityTypeConfiguration<UrlItem>
             .IsRequired()
             .HasMaxLength(2048);
 
-        builder.Property(x => x.ShortUrl)
-            .IsRequired()
-            .HasMaxLength(6)
-            .IsFixedLength();
-
-        builder.HasIndex(x => x.ShortUrl)
-            .IsUnique();
-
         builder.Property(x => x.CreatedAt)
             .IsRequired();
     }
