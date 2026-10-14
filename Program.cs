@@ -112,10 +112,14 @@ app.MapGet("/{shortUrl}", async (
 
     if (urlItem is null)
     {
-        return Results.NotFound($"/{shortUrl} was not found");
+        return Results.NotFound(new
+        {
+            message = "Short URL was not found",
+            shortUrl
+        });
     }
 
-    return Results.Ok(urlItem);
+    return Results.Redirect(urlItem.OriginalUrl);
 });
 
 app.Run();
