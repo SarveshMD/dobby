@@ -3,6 +3,9 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# custom
+src/Dobby/Dobby.http
+
 # dotenv files
 .env
 

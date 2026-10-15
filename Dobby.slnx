@@ -1,7 +1,6 @@
 <Solution>
-  <Folder Name="/src/" />
-  <Folder Name="/src/Dobby/">
-    <Project Path="src/Dobby/dobby.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/Dobby/Dobby.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Dobby.Tests/Dobby.Tests.csproj" />
