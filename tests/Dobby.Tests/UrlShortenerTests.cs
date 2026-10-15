@@ -106,15 +106,49 @@ public class UrlShortenerTests
 
     }
 
-    [Fact]
-    public void Decode_NonAsciiCharacters_ThrowsIndexOutOfRangeException()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Decode_NullOrWhitespace_ThrowsArgumentException(string? invalidCode)
     {
         // Arrange
         var sut = CreateSut();
-        var act = () => sut.Decode("😭");
+        var act = () => sut.Decode(invalidCode!);
 
         // Act and Assert
-        act.Should().Throw<IndexOutOfRangeException>();
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("abc")]
+    [InlineData("abcde")]
+    [InlineData("abcdefg")]
+    public void Decode_LengthNotSix_ThrowsArgumentException(string invalidCode)
+    {
+        // Arrange
+        var sut = CreateSut();
+        var act = () => sut.Decode(invalidCode);
+
+        // Act and Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("abc-ef")]
+    [InlineData("abc_ef")]
+    [InlineData("abc ef")]
+    [InlineData("abc!ef")]
+    [InlineData("abc💀ef")]
+    public void Decode_InvalidCharacters_ThrowsArgumentException(string invalidCode)
+    {
+        // Arrange
+        var sut = CreateSut();
+        var act = () => sut.Decode(invalidCode);
+
+        // Act and Assert
+        act.Should().Throw<ArgumentException>();
     }
 
 }

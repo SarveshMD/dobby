@@ -49,10 +49,20 @@ public class UrlShortener : IUrlShortenerService
 
     public int Decode(string code)
     {
+        if (code is null || code.Length != 6)
+        {
+            throw new ArgumentException($"Short Code must be exactly 6 characters.", nameof(code));
+        }
+
         uint scrambled = 0;
 
         foreach (char c in code)
         {
+            if (c >= LookupTable.Length || LookupTable[c] == -1)
+            {
+                throw new ArgumentException($"Invalid character '{c}' in Short Code.", nameof(code));
+            }
+
             scrambled = (scrambled * 62) + (uint)LookupTable[c];
         }
 
