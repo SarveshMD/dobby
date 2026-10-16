@@ -8,14 +8,16 @@ public record CreateUrlItemDto(
 
 public record ResponseUrlItemDto(
     int Id,
-    string OriginalUrl
+    string OriginalUrl,
+    string ShortUrl
 )
 {
-    public static ResponseUrlItemDto FromEntity(UrlItem item)
+    public static ResponseUrlItemDto FromEntityAndShortUrl(UrlItem item, string shortCode)
     {
         return new ResponseUrlItemDto(
             item.Id,
-            item.OriginalUrl
+            item.OriginalUrl,
+            ShortUrl: shortCode
         );
     }
 };

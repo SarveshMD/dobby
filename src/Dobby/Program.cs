@@ -64,27 +64,17 @@ app.MapPost("/api/urls", async (
     {
         return Results.ValidationProblem(validationResult.ToDictionary());
     }
-    await using var cmd = db.Database.GetDbConnection().CreateCommand();
-    cmd.CommandText = "SELECT nextval('url_items_id_seq')::integer";
-
-    if (cmd.Connection!.State != ConnectionState.Open)
-    {
-        await cmd.Connection.OpenAsync(ct);
-    }
-
-    var id = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
-
-    string encodedUrl = urlShortener.Encode(id);
 
     var urlItem = new UrlItem(
-        id,
         dto.OriginalUrl
     );
 
     db.UrlItems.Add(urlItem);
     await db.SaveChangesAsync(ct);
 
-    var res = ResponseUrlItemDto.FromEntity(urlItem);
+    string encodedUrl = urlShortener.Encode(urlItem.Id);
+
+    var res = ResponseUrlItemDto.FromEntityAndShortUrl(urlItem, encodedUrl);
 
     return Results.Created($"/{encodedUrl}", res);
 });
@@ -124,3 +114,5 @@ app.MapGet("/{shortUrl}", async (
 });
 
 app.Run();
+
+public partial class Program { }

@@ -8,9 +8,8 @@ public class UrlItem
 
     private UrlItem() { }
 
-    public UrlItem(int id, string originalUrl)
+    public UrlItem(string originalUrl)
     {
-        Id = id;
         OriginalUrl = originalUrl;
         CreatedAt = DateTimeOffset.UtcNow;
     }
