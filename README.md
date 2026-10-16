@@ -23,13 +23,14 @@ A high-performance, authenticated URL shortener and redirect engine built with A
   - Configure EF Core with PostgreSQL and snake_case naming conventions
   - Define `ShortenedUrl` and `User` models with relational integrity
   > Skipped `User` model for now
-- [ ] **Phase 2: Base62 Encoding Engine**
+- [x] **Phase 2: Base62 Encoding Engine**
   - Implement bidirectional Base62 converter (numeric ID $\leftrightarrow$ short string)
   - Write unit tests verifying edge cases, boundary collisions, and reversibility
-- [ ] **Phase 3: The Teleportation Engine (Redirection)**
+- [x] **Phase 3: The Teleportation Engine (Redirection)**
   - Implement `GET /{code}` redirect endpoint
   - Return HTTP 302 Found (or 301 Moved Permanently)
   - Increment click counters asynchronously
+  > Skipped click counters (TODO: analytics after User model)
 - [ ] **Phase 4: Creation & Validation API**
   - Implement `POST /api/urls` with FluentValidation for URL URI schemes
   - Handle idempotency (return existing short code if identical long URL exists)
