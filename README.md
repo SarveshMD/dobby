@@ -31,9 +31,10 @@ A high-performance, authenticated URL shortener and redirect engine built with A
   - Return HTTP 302 Found (or 301 Moved Permanently)
   - Increment click counters asynchronously
   > Skipped click counters (TODO: analytics after User model)
-- [ ] **Phase 4: Creation & Validation API**
+- [x] **Phase 4: Creation & Validation API**
   - Implement `POST /api/urls` with FluentValidation for URL URI schemes
   - Handle idempotency (return existing short code if identical long URL exists)
+  > Skip idempotency handling, (tradeoff memory for write speed - handling idempotency will take an extra read for every write)
 - [ ] **Phase 5: High-Performance Caching**
   - Integrate Redis cache on the `GET /{code}` path (Cache-Aside pattern)
   - Benchmark database vs. cache-hit redirect response latency
