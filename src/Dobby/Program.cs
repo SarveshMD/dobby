@@ -1,4 +1,3 @@
-using System.Data;
 using Dobby.Database;
 using Dobby.DTOs;
 using Dobby.Models;
@@ -16,21 +15,24 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<UrlDbContext>(optionsBuilder =>
+
+if (!builder.Environment.IsEnvironment("Testing"))
 {
-
-    optionsBuilder
-        .UseNpgsql(connectionString)
-        .UseSnakeCaseNamingConvention();
-
-    if (builder.Environment.IsDevelopment())
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Services.AddDbContext<UrlDbContext>(optionsBuilder =>
     {
         optionsBuilder
-            .EnableSensitiveDataLogging()
-            .LogTo(Console.WriteLine, LogLevel.Information);
-    }
-});
+            .UseNpgsql(connectionString)
+            .UseSnakeCaseNamingConvention();
+
+        if (builder.Environment.IsDevelopment())
+        {
+            optionsBuilder
+                .EnableSensitiveDataLogging()
+                .LogTo(Console.WriteLine, LogLevel.Information);
+        }
+    });
+}
 
 var secretKeyString = builder.Configuration["UrlShortener:SecretKey"]
     ?? throw new InvalidOperationException("Skip32 secret key is missing from configuration");
