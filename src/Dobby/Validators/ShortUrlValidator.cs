@@ -1,6 +1,8 @@
 using FluentValidation;
 using Dobby.DTOs;
 
+namespace Dobby.Validators;
+
 public class ShortUrlValidator : AbstractValidator<GetShortUrlRequest>
 {
     public ShortUrlValidator()

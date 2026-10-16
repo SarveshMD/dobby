@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Dobby.Models;
+namespace Dobby.Models.Configuration;
 
 public class UrlItemConfiguration : IEntityTypeConfiguration<UrlItem>
 {

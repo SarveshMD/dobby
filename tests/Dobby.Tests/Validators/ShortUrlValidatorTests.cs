@@ -1,6 +1,5 @@
 using Dobby.Validators;
 using FluentValidation.TestHelper;
-using FluentAssertions;
 using Dobby.DTOs;
 
 namespace Dobby.Tests.Validators;

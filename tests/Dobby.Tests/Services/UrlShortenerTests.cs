@@ -1,8 +1,7 @@
 using Dobby.Services;
 using FluentAssertions;
-using Xunit;
 
-namespace Dobby.Tests;
+namespace Dobby.Tests.Services;
 
 public class UrlShortenerTests
 {
