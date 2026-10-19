@@ -3,11 +3,11 @@ namespace Dobby.Models;
 
 public class User
 {
-    public Guid Id { get; set; }
-    public string Username { get; set; } = "";
-    public string PasswordHash { get; set; } = "";
-    public ICollection<UrlItem> UrlItems { get; set; } = [];
-    public DateTimeOffset CreatedAt { get; set; }
+    public Guid Id { get; private set; }
+    public string Username { get; private set; } = "";
+    public string PasswordHash { get; private set; } = "";
+    public DateTimeOffset CreatedAt { get; private set; }
+    public ICollection<UrlItem> UrlItems { get; private set; } = [];
 
     private User() { }
 
