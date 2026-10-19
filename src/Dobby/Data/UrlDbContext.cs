@@ -10,6 +10,7 @@ public class UrlDbContext : DbContext
     }
 
     public DbSet<UrlItem> UrlItems => Set<UrlItem>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

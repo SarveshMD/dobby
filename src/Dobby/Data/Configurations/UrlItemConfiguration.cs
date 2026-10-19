@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Dobby.Models;
 
-namespace Dobby.Models.Configuration;
+namespace Dobby.Data.Configuration;
 
 public class UrlItemConfiguration : IEntityTypeConfiguration<UrlItem>
 {
@@ -20,5 +21,10 @@ public class UrlItemConfiguration : IEntityTypeConfiguration<UrlItem>
 
         builder.Property(x => x.CreatedAt)
             .IsRequired();
+
+        builder.HasOne(UrlItem => UrlItem.User)
+            .WithMany(user => user.UrlItems)
+            .HasForeignKey(UrlItem => UrlItem.UserId)
+            .IsRequired(false);
     }
 }
