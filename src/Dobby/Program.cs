@@ -2,10 +2,15 @@ using Dobby.Database;
 using Dobby.DTOs;
 using Dobby.Models;
 using Dobby.Services;
-using Dobby.Validators;
+using Dobby.Extensions;
+
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +19,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
 
 if (!builder.Environment.IsEnvironment("Testing"))
 {
@@ -34,10 +38,42 @@ if (!builder.Environment.IsEnvironment("Testing"))
     });
 }
 
+
 var secretKeyString = builder.Configuration["UrlShortener:SecretKey"]
     ?? throw new InvalidOperationException("Skip32 secret key is missing from configuration");
 
 builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(_ => new UrlShortener(secretKeyString));
+
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    var jwtSettings = builder.Configuration.GetSection("Jwt");
+    var secretKey = jwtSettings["Key"]
+        ?? throw new InvalidOperationException("JWT Secret Key missing in Config");
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"],
+
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"],
+
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -47,6 +83,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseHttpsRedirection();
 
@@ -58,7 +97,8 @@ app.MapPost("/api/urls", async (
     CreateUrlItemDto dto,
     CancellationToken ct,
     IValidator<CreateUrlItemDto> validator,
-    IUrlShortenerService urlShortener
+    IUrlShortenerService urlShortener,
+    ClaimsPrincipal user
 ) =>
 {
     var validationResult = await validator.ValidateAsync(dto, ct);
@@ -68,8 +108,16 @@ app.MapPost("/api/urls", async (
         return Results.ValidationProblem(validationResult.ToDictionary());
     }
 
+    Guid? userId = null;
+
+    if (user.Identity?.IsAuthenticated == true)
+    {
+        userId = user.GetUserId();
+    }
+
     var urlItem = new UrlItem(
-        dto.OriginalUrl
+        dto.OriginalUrl,
+        userId
     );
 
     db.UrlItems.Add(urlItem);
@@ -92,8 +140,6 @@ app.MapGet("/{shortUrl}", async (
     CancellationToken ct
 ) =>
 {
-    Console.WriteLine($"ShortURL from URL: {shortUrl}");
-
     var validationResult = await validator.ValidateAsync(new GetShortUrlRequest(shortUrl), ct);
 
     if (!validationResult.IsValid)
