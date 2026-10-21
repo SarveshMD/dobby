@@ -167,6 +167,40 @@ app.MapGet("/{shortUrl}", async (
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status307TemporaryRedirect);
 
+app.MapGet("/api/urls/my-urls", async (
+    UrlDbContext db,
+    ClaimsPrincipal principal,
+    IUrlShortenerService urlShortenerService,
+    CancellationToken ct
+) =>
+{
+    var userId = principal.GetUserId();
+    var user = await db.Users
+        .AnyAsync(user => user.Id == userId, ct);
+
+    if (!user)
+    {
+        return Results.Unauthorized();
+    }
+
+    var urlItems = await db.UrlItems
+        .Where(x => x.UserId == userId)
+        .ToListAsync(ct);
+
+    var res = urlItems
+        .Select(x =>
+            ResponseUrlItemDto.FromEntityAndShortUrl(
+                x,
+                urlShortenerService.Encode(x.Id)
+            )
+        );
+
+    return Results.Ok(res);
+})
+.RequireAuthorization()
+.Produces(StatusCodes.Status401Unauthorized)
+.Produces<IEnumerable<ResponseUrlItemDto>>(StatusCodes.Status200OK);
+
 app.MapPost("/api/auth/register", async (
     RegisterRequestDto dto,
     ITokenService tokenService,
