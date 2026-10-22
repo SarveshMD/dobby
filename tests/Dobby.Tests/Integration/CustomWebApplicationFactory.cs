@@ -9,6 +9,8 @@ namespace Dobby.Tests.Integration;
 
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _databaseName = Guid.NewGuid().ToString();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -17,7 +19,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.AddDbContext<UrlDbContext>(options =>
             {
-                options.UseInMemoryDatabase("InMemoryUrlTestDb");
+                options.UseInMemoryDatabase(_databaseName);
             });
         });
 

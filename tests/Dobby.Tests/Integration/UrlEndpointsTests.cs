@@ -5,18 +5,26 @@ using FluentAssertions;
 
 namespace Dobby.Tests.Integration;
 
-public class UrlEndpointsTests : IClassFixture<CustomWebApplicationFactory>
+public class UrlEndpointsTests : IDisposable
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public UrlEndpointsTests(CustomWebApplicationFactory factory)
+    public UrlEndpointsTests()
     {
-        _client = factory.CreateClient(
+        _factory = new CustomWebApplicationFactory();
+        _client = _factory.CreateClient(
             new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false // block HttpClient from following 302 redirects
             }
         );
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+        _factory.Dispose();
     }
 
     [Fact]
