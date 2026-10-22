@@ -188,6 +188,7 @@ app.MapGet("/api/urls/my-urls", async (
         .ToListAsync(ct);
 
     var res = urlItems
+        .OrderBy(x => x.CreatedAt)
         .Select(x =>
             ResponseUrlItemDto.FromEntityAndShortUrl(
                 x,
