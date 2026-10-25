@@ -167,7 +167,7 @@ app.MapGet("/{shortUrl}", async (
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status307TemporaryRedirect);
 
-app.MapGet("/api/urls/my-urls", async (
+app.MapGet("/api/urls/my", async (
     UrlDbContext db,
     ClaimsPrincipal principal,
     IUrlShortenerService urlShortenerService,
@@ -201,6 +201,55 @@ app.MapGet("/api/urls/my-urls", async (
 .RequireAuthorization()
 .Produces(StatusCodes.Status401Unauthorized)
 .Produces<IEnumerable<ResponseUrlItemDto>>(StatusCodes.Status200OK);
+
+app.MapDelete("/api/urls/{urlIdString}", async (
+    string urlIdString,
+    ClaimsPrincipal principal,
+    UrlDbContext db,
+    IValidator<UrlIdDto> validator,
+    CancellationToken ct
+) =>
+{
+    var userId = principal.GetUserId();
+    var user = await db.Users
+        .AnyAsync(x => x.Id == userId, ct);
+
+    if (!user)
+    {
+        return Results.Unauthorized();
+    }
+
+    var validationResult = await validator.ValidateAsync(new UrlIdDto(urlIdString), ct);
+
+    if (!validationResult.IsValid)
+    {
+        return Results.ValidationProblem(validationResult.ToDictionary());
+    }
+
+    int urlId = int.Parse(urlIdString);
+
+    var urlItem = await db.UrlItems
+        .Where(x => x.UserId == userId)
+        .FirstOrDefaultAsync(x => x.Id == urlId, ct);
+
+    if (urlItem is null)
+    {
+        return Results.NotFound(new
+        {
+            message = "UrlItem with the given UrlId was not found",
+            urlId
+        });
+    }
+
+    db.UrlItems.Remove(urlItem);
+    await db.SaveChangesAsync(ct);
+
+    return Results.NoContent();
+})
+.RequireAuthorization()
+.Produces(StatusCodes.Status401Unauthorized)
+.Produces(StatusCodes.Status404NotFound)
+.Produces(StatusCodes.Status204NoContent);
 
 app.MapPost("/api/auth/register", async (
     RegisterRequestDto dto,
