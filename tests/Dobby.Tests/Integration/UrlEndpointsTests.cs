@@ -137,4 +137,115 @@ public class UrlEndpointsTests : IDisposable
         responseUrlItemDto.OriginalUrl.Should().Be(url);
         responseUrlItemDto.UserId.Should().Be(userBody.Id);
     }
+
+    [Fact]
+    public async Task DeleteUrl_WithoutAuthorization_Returns401Unauthorized()
+    {
+        // Arrange
+        string urlId = "42";
+
+        // Act
+        var response = await _client.DeleteAsync($"/api/urls/{urlId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task DeleteUrl_AuthorizedButNotOwned_Returns404NotFound()
+    {
+        // Arrange
+        var (_, _, userBody) = await CreateRegisteredUserAsync();
+
+        string url = "https://www.youtube.com/watch?v=W2twcSFYlt0";
+        var anonymousUrl = await CreateUrlItemAsync(url);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/urls/{anonymousUrl.Id}"
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteUrl_AuthorizedAndOwned_Returns204NoContent()
+    {
+        // Arrange
+        var (_, _, userBody) = await CreateRegisteredUserAsync();
+
+        string url = "https://letterboxd.com/film/la-la-land/";
+        var userOwnedUrl = await CreateUrlItemAsync(url, userBody.Token);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/urls/{userOwnedUrl.Id}"
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+        var getAfterDelete = await _client.GetAsync($"/{userOwnedUrl.ShortUrl}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        getAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteUrl_AfterDeletingIt_Returns404NotFound()
+    {
+        var (_, _, userBody) = await CreateRegisteredUserAsync();
+
+        string url = "https://letterboxd.com/film/mean-girls/";
+        var userOwnedUrl = await CreateUrlItemAsync(url, userBody.Token);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/urls/{userOwnedUrl.Id}"
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        var duplicateRequest = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/urls/{userOwnedUrl.Id}"
+        );
+        duplicateRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+        var duplicateResponse = await _client.SendAsync(duplicateRequest);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        duplicateResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Theory]
+    [InlineData("NotValidUrlID")]
+    [InlineData("1014$")]
+    [InlineData("101492c")]
+    [InlineData(" 101492")]
+    [InlineData("101492 ")]
+    public async Task DeleteUrl_WithBadUrlId_Returns400BadRequest(string urlId)
+    {
+        var (_, _, userBody) = await CreateRegisteredUserAsync();
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"/api/urls/{Uri.EscapeDataString(urlId)}"
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }
