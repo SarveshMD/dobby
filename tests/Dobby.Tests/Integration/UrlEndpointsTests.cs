@@ -12,6 +12,7 @@ public class UrlEndpointsTests : IDisposable
     private readonly HttpClient _client;
     private readonly string _validUsername = "ValdiUsername";
     private readonly string _validPassword = "ValidPassword";
+    private readonly string _urlsEndpoint = "/api/urls";
 
     public UrlEndpointsTests()
     {
@@ -30,49 +31,6 @@ public class UrlEndpointsTests : IDisposable
         _factory.Dispose();
     }
 
-    private async Task<(string Username, string Password, AuthResponseDto body)>
-        CreateRegisteredUserAsync()
-    {
-        var username = _validUsername;
-        var password = _validPassword;
-
-        var payload = new RegisterRequestDto(username, password);
-
-        var response = await _client.PostAsJsonAsync(
-            "/api/auth/register",
-            payload
-        );
-
-        var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        body.Should().NotBeNull();
-
-        return (username, password, body);
-    }
-
-    private async Task<ResponseUrlItemDto> CreateUrlItemAsync(string url, string? token = null)
-    {
-        var createUrlItem = new CreateUrlItemDto(url);
-
-        var postUrlItemRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            "/api/urls"
-        )
-        {
-            Content = JsonContent.Create(createUrlItem)
-        };
-        postUrlItemRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await _client.SendAsync(postUrlItemRequest);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var responseUrlItemDto = await response.Content.ReadFromJsonAsync<ResponseUrlItemDto>();
-        responseUrlItemDto.Should().NotBeNull();
-
-        return responseUrlItemDto;
-    }
-
     [Fact]
     public async Task PostUrl_WithValidPayload_Returns201CreatedAndResponseDto()
     {
@@ -80,7 +38,7 @@ public class UrlEndpointsTests : IDisposable
         var payload = new CreateUrlItemDto("https://github.com");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/urls", payload);
+        var response = await _client.PostAsJsonAsync(_urlsEndpoint, payload);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -109,7 +67,7 @@ public class UrlEndpointsTests : IDisposable
     {
         // Arrange
         string targetUrl = "https://letterboxd.com/film/avengers-doomsday/";
-        var createResponse = await _client.PostAsJsonAsync("/api/urls", new CreateUrlItemDto(targetUrl));
+        var createResponse = await _client.PostAsJsonAsync(_urlsEndpoint, new CreateUrlItemDto(targetUrl));
         createResponse.EnsureSuccessStatusCode();
 
         var createdItem = await createResponse.Content.ReadFromJsonAsync<ResponseUrlItemDto>();
@@ -127,11 +85,11 @@ public class UrlEndpointsTests : IDisposable
     public async Task PostUrl_WithValidPayloadAndAuthorization_Returns201CreatedAndResponseDtoWithUserId()
     {
         // Arrange
-        var (_, _, userBody) = await CreateRegisteredUserAsync();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         string url = "https://letterboxd.com/film/premalu/";
 
         // Act
-        var responseUrlItemDto = await CreateUrlItemAsync(url, userBody.Token);
+        var responseUrlItemDto = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url, userBody.Token);
 
         // Assert
         responseUrlItemDto.OriginalUrl.Should().Be(url);
@@ -145,7 +103,7 @@ public class UrlEndpointsTests : IDisposable
         string urlId = "42";
 
         // Act
-        var response = await _client.DeleteAsync($"/api/urls/{urlId}");
+        var response = await _client.DeleteAsync($"{_urlsEndpoint}/{urlId}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -155,14 +113,14 @@ public class UrlEndpointsTests : IDisposable
     public async Task DeleteUrl_AuthorizedButNotOwned_Returns404NotFound()
     {
         // Arrange
-        var (_, _, userBody) = await CreateRegisteredUserAsync();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
 
         string url = "https://www.youtube.com/watch?v=W2twcSFYlt0";
-        var anonymousUrl = await CreateUrlItemAsync(url);
+        var anonymousUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url);
 
         var request = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/api/urls/{anonymousUrl.Id}"
+            $"{_urlsEndpoint}/{anonymousUrl.Id}"
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
 
@@ -177,14 +135,14 @@ public class UrlEndpointsTests : IDisposable
     public async Task DeleteUrl_AuthorizedAndOwned_Returns204NoContent()
     {
         // Arrange
-        var (_, _, userBody) = await CreateRegisteredUserAsync();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
 
         string url = "https://letterboxd.com/film/la-la-land/";
-        var userOwnedUrl = await CreateUrlItemAsync(url, userBody.Token);
+        var userOwnedUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url, userBody.Token);
 
         var request = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/api/urls/{userOwnedUrl.Id}"
+            $"{_urlsEndpoint}/{userOwnedUrl.Id}"
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
 
@@ -200,20 +158,20 @@ public class UrlEndpointsTests : IDisposable
     [Fact]
     public async Task DeleteUrl_AfterDeletingIt_Returns404NotFound()
     {
-        var (_, _, userBody) = await CreateRegisteredUserAsync();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
 
         string url = "https://letterboxd.com/film/mean-girls/";
-        var userOwnedUrl = await CreateUrlItemAsync(url, userBody.Token);
+        var userOwnedUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url, userBody.Token);
 
         var request = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/api/urls/{userOwnedUrl.Id}"
+            $"{_urlsEndpoint}/{userOwnedUrl.Id}"
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
 
         var duplicateRequest = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/api/urls/{userOwnedUrl.Id}"
+            $"{_urlsEndpoint}/{userOwnedUrl.Id}"
         );
         duplicateRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
 
@@ -234,11 +192,11 @@ public class UrlEndpointsTests : IDisposable
     [InlineData("101492 ")]
     public async Task DeleteUrl_WithBadUrlId_Returns400BadRequest(string urlId)
     {
-        var (_, _, userBody) = await CreateRegisteredUserAsync();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
 
         var request = new HttpRequestMessage(
             HttpMethod.Delete,
-            $"/api/urls/{Uri.EscapeDataString(urlId)}"
+            $"{_urlsEndpoint}/{Uri.EscapeDataString(urlId)}"
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
 

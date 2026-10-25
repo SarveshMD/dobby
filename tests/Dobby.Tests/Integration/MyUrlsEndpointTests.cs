@@ -12,6 +12,7 @@ public class MyUrlsEndpointTests : IDisposable
     private readonly HttpClient _client;
     private readonly string _validUsername = "ValdiUsername";
     private readonly string _validPassword = "ValidPassword";
+    private readonly string _myUrlsEndpoint = "/api/urls/my";
 
     public MyUrlsEndpointTests()
     {
@@ -25,56 +26,16 @@ public class MyUrlsEndpointTests : IDisposable
         _factory.Dispose();
     }
 
-    private async Task<(string Username, string Password, AuthResponseDto body)>
-        CreateRegisteredUserAsync(string username, string password)
-    {
-        var payload = new RegisterRequestDto(username, password);
-
-        var response = await _client.PostAsJsonAsync(
-            "/api/auth/register",
-            payload
-        );
-
-        var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        body.Should().NotBeNull();
-
-        return (username, password, body);
-    }
-
-    private async Task<ResponseUrlItemDto> CreateUrlItemAsync(string url, string token)
-    {
-        var createUrlItem = new CreateUrlItemDto(url);
-
-        var postUrlItemRequest = new HttpRequestMessage(
-            HttpMethod.Post,
-            "/api/urls"
-        )
-        {
-            Content = JsonContent.Create(createUrlItem)
-        };
-        postUrlItemRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await _client.SendAsync(postUrlItemRequest);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var responseUrlItemDto = await response.Content.ReadFromJsonAsync<ResponseUrlItemDto>();
-        responseUrlItemDto.Should().NotBeNull();
-
-        return responseUrlItemDto;
-    }
-
     [Fact]
     public async Task GetMyUrls_AuthenticatedUserWithNoUrls_Returns200OkWithEmptyBody()
     {
         // Arrange
-        var (_, _, body) = await CreateRegisteredUserAsync(_validUsername, _validPassword);
+        var (_, _, body) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         var token = body.Token;
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            "/api/urls/my-urls"
+            _myUrlsEndpoint
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -91,7 +52,7 @@ public class MyUrlsEndpointTests : IDisposable
     public async Task GetMyUrls_AuthenticatedUserWithSomeUrls_Returns200OkWithCreatedItemsInBodyOrderedByCreationTime()
     {
         // Arrange
-        var (_, _, body) = await CreateRegisteredUserAsync(_validUsername, _validPassword);
+        var (_, _, body) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         var token = body.Token;
 
         string[] urls =
@@ -104,12 +65,12 @@ public class MyUrlsEndpointTests : IDisposable
 
         foreach (string url in urls)
         {
-            responseUrlItemDtos.Add(await CreateUrlItemAsync(url, token));
+            responseUrlItemDtos.Add(await IntegrationTestHelpers.CreateUrlItemAsync(_client, url, token));
         }
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            "/api/urls/my-urls"
+            _myUrlsEndpoint
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -131,7 +92,7 @@ public class MyUrlsEndpointTests : IDisposable
         // Arrange
 
         // Act
-        var response = await _client.GetAsync("/api/urls/my-urls");
+        var response = await _client.GetAsync(_myUrlsEndpoint);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -145,7 +106,7 @@ public class MyUrlsEndpointTests : IDisposable
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            "/api/urls/my-urls"
+            _myUrlsEndpoint
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", dummyToken);
 
@@ -160,21 +121,21 @@ public class MyUrlsEndpointTests : IDisposable
     public async Task GetMyUrls_TwoValidUsers_CannotGetEachOthersItems()
     {
         // Arrange
-        var user1 = await CreateRegisteredUserAsync("user1", _validPassword);
-        var user2 = await CreateRegisteredUserAsync("user2", _validPassword);
+        var user1 = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, "user1", _validPassword);
+        var user2 = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, "user2", _validPassword);
 
-        var responseUrlItemOne = await CreateUrlItemAsync("https://letterboxd.com/film/spider-man-no-way-home/", user1.body.Token);
-        var responseUrlItemTwo = await CreateUrlItemAsync("https://letterboxd.com/film/obsession-2025/", user2.body.Token);
+        var responseUrlItemOne = await IntegrationTestHelpers.CreateUrlItemAsync(_client, "https://letterboxd.com/film/spider-man-no-way-home/", user1.body.Token);
+        var responseUrlItemTwo = await IntegrationTestHelpers.CreateUrlItemAsync(_client, "https://letterboxd.com/film/obsession-2025/", user2.body.Token);
 
         var getRequestOne = new HttpRequestMessage(
             HttpMethod.Get,
-            "/api/urls/my-urls"
+            _myUrlsEndpoint
         );
         getRequestOne.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.body.Token);
 
         var getRequestTwo = new HttpRequestMessage(
             HttpMethod.Get,
-            "/api/urls/my-urls"
+            _myUrlsEndpoint
         );
         getRequestTwo.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user2.body.Token);
 

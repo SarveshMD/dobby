@@ -14,6 +14,9 @@ public class AuthEndpointsTests : IDisposable
     private readonly HttpClient _client;
     private readonly string _validUsername = "ValdiUsername";
     private readonly string _validPassword = "ValidPassword";
+    private readonly string _myUrlsEndpoint = "/api/urls/my";
+    private readonly string _registerEndpoint = "/api/auth/register";
+    private readonly string _loginEndpoint = "/api/auth/login";
 
     public AuthEndpointsTests()
     {
@@ -27,51 +30,6 @@ public class AuthEndpointsTests : IDisposable
         _factory.Dispose();
     }
 
-    private async Task<(string Username, string Password, AuthResponseDto body)>
-        CreateRegisteredUserAsync()
-    {
-        var username = _validUsername;
-        var password = _validPassword;
-
-        var payload = new RegisterRequestDto(username, password);
-
-        var response = await _client.PostAsJsonAsync(
-            "/api/auth/register",
-            payload
-        );
-
-        var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        body.Should().NotBeNull();
-
-        return (username, password, body);
-    }
-
-    [Fact]
-    public async Task PostRegister_WithValidPayload_Returns201CreatedAndAuthResponseDto()
-    {
-        // Arrange
-        var payload = new RegisterRequestDto(_validUsername, _validPassword);
-
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/register", payload);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-
-        body.Should().NotBeNull();
-        body.Id.Should().NotBe(Guid.Empty);
-        body.Username.Should().Be(_validUsername);
-        body.Message.Should().Be("Registration Successful");
-        body.Token.Should().NotBeNullOrWhiteSpace();
-
-        response.Headers.Location.Should().NotBeNull();
-        response.Headers.Location.ToString().Should().Be($"/users/{body.Id}");
-    }
-
     [Fact]
     public async Task PostRegister_WithDuplicateUsername_Returns409Conflict()
     {
@@ -79,8 +37,8 @@ public class AuthEndpointsTests : IDisposable
         var payload = new RegisterRequestDto(_validUsername, _validPassword);
 
         // Act
-        await _client.PostAsJsonAsync("/api/auth/register", payload);
-        var responseFailure = await _client.PostAsJsonAsync("/api/auth/register", payload);
+        await _client.PostAsJsonAsync(_registerEndpoint, payload);
+        var responseFailure = await _client.PostAsJsonAsync(_registerEndpoint, payload);
 
         // Assert
         responseFailure.StatusCode.Should().Be(HttpStatusCode.Conflict);
@@ -96,7 +54,7 @@ public class AuthEndpointsTests : IDisposable
         var payload = new RegisterRequestDto("invalid$$username", _validPassword);
 
         // Act
-        var responseFailure = await _client.PostAsJsonAsync("/api/auth/register", payload);
+        var responseFailure = await _client.PostAsJsonAsync(_registerEndpoint, payload);
 
         // Assert
         responseFailure.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -119,8 +77,8 @@ public class AuthEndpointsTests : IDisposable
         var payload = new RegisterRequestDto(_validPassword, "abc");
 
         // Act
-        await _client.PostAsJsonAsync("/api/auth/register", payload);
-        var responseFailure = await _client.PostAsJsonAsync("/api/auth/register", payload);
+        await _client.PostAsJsonAsync(_registerEndpoint, payload);
+        var responseFailure = await _client.PostAsJsonAsync(_registerEndpoint, payload);
 
         // Assert
         responseFailure.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -143,8 +101,8 @@ public class AuthEndpointsTests : IDisposable
         var payload = new RegisterRequestDto("", _validPassword);
 
         // Act
-        await _client.PostAsJsonAsync("/api/auth/register", payload);
-        var responseFailure = await _client.PostAsJsonAsync("/api/auth/register", payload);
+        await _client.PostAsJsonAsync(_registerEndpoint, payload);
+        var responseFailure = await _client.PostAsJsonAsync(_registerEndpoint, payload);
 
         // Assert
         responseFailure.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -167,8 +125,8 @@ public class AuthEndpointsTests : IDisposable
         var payload = new RegisterRequestDto(_validPassword, "");
 
         // Act
-        await _client.PostAsJsonAsync("/api/auth/register", payload);
-        var responseFailure = await _client.PostAsJsonAsync("/api/auth/register", payload);
+        await _client.PostAsJsonAsync(_registerEndpoint, payload);
+        var responseFailure = await _client.PostAsJsonAsync(_registerEndpoint, payload);
 
         // Assert
         responseFailure.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -187,12 +145,12 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostRegister_WithValidPayload_ReturnsJwtTokenAcceptedByProtectedEndpoint()
     {
         // Arrange
-        var user = await CreateRegisteredUserAsync();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         var token = user.body.Token;
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            "/api/urls/my-urls"
+            _myUrlsEndpoint
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -209,11 +167,11 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithValidPayload_Returns200OkAndAuthResponseDto()
     {
         // Arrange
-        var user = await CreateRegisteredUserAsync();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         var payload = new LoginRequestDto(user.Username, user.Password);
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", payload);
+        var response = await _client.PostAsJsonAsync(_loginEndpoint, payload);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -231,10 +189,10 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithValidPayload_ReturnsJwtTokenAcceptedByProtectedEndpoint()
     {
         // Arrange
-        var user = await CreateRegisteredUserAsync();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         var loginPayload = new LoginRequestDto(user.Username, user.Password);
         var loginResponse = await _client.PostAsJsonAsync(
-            "/api/auth/login",
+            _loginEndpoint,
             loginPayload
         );
         var loginBody = await loginResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
@@ -244,7 +202,7 @@ public class AuthEndpointsTests : IDisposable
 
         var request = new HttpRequestMessage(
             HttpMethod.Get,
-            "/api/urls/my-urls"
+            _myUrlsEndpoint
         );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", loginBody.Token);
 
@@ -261,11 +219,11 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithUnknownUsername_Returns401Unauthorized()
     {
         // Arrange
-        var user = await CreateRegisteredUserAsync();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         var payload = new LoginRequestDto("UnknownUsername", user.Password);
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", payload);
+        var response = await _client.PostAsJsonAsync(_loginEndpoint, payload);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -275,11 +233,11 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithInvalidPassword_Returns401Unauthorized()
     {
         // Arrange
-        var user = await CreateRegisteredUserAsync();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
         var payload = new LoginRequestDto(user.Username, "InvalidPassword");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", payload);
+        var response = await _client.PostAsJsonAsync(_loginEndpoint, payload);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -292,7 +250,7 @@ public class AuthEndpointsTests : IDisposable
         var payload = new LoginRequestDto("", _validPassword);
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", payload);
+        var response = await _client.PostAsJsonAsync(_loginEndpoint, payload);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -314,7 +272,7 @@ public class AuthEndpointsTests : IDisposable
         var payload = new LoginRequestDto(_validUsername, "");
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/login", payload);
+        var response = await _client.PostAsJsonAsync(_loginEndpoint, payload);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

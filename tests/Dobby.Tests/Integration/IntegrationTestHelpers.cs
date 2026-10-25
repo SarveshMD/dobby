@@ -8,13 +8,16 @@ namespace Dobby.Tests.Integration;
 
 public static class IntegrationTestHelpers
 {
+    private static readonly string _registerEndpoint = "/api/auth/register";
+    private static readonly string _urlsEndpoint = "/api/urls";
+
     public static async Task<(string Username, string Password, AuthResponseDto body)>
         CreateRegisteredUserAsync(HttpClient client, string username, string password)
     {
         var payload = new RegisterRequestDto(username, password);
 
         var response = await client.PostAsJsonAsync(
-            "/api/auth/register",
+            _registerEndpoint,
             payload
         );
 
@@ -32,7 +35,7 @@ public static class IntegrationTestHelpers
 
         var postUrlItemRequest = new HttpRequestMessage(
             HttpMethod.Post,
-            "/api/urls"
+            _urlsEndpoint
         )
         {
             Content = JsonContent.Create(createUrlItem)
