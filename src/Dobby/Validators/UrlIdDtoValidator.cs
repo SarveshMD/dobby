@@ -3,9 +3,9 @@ using Dobby.DTOs;
 
 namespace Dobby.Validators;
 
-public class UrlIdValidator : AbstractValidator<UrlIdDto>
+public class UrlIdDtoValidator : AbstractValidator<UrlIdDto>
 {
-    public UrlIdValidator()
+    public UrlIdDtoValidator()
     {
         RuleFor(x => x.UrlId)
             .NotNull().WithMessage("UrlId cannot be null")
