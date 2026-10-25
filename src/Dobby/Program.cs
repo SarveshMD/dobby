@@ -44,7 +44,7 @@ var secretKeyString = builder.Configuration["UrlShortener:SecretKey"]
 
 builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(_ => new UrlShortener(secretKeyString));
 
-builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
 builder.Services.AddAuthentication(options =>
 {

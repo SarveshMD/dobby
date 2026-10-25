@@ -2,7 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Dobby.DTOs;
+using Dobby.Models;
+using Dobby.Services;
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Dobby.Tests.Integration;
 
@@ -154,5 +158,27 @@ public class MyUrlsEndpointTests : IDisposable
         responseTwo.StatusCode.Should().Be(HttpStatusCode.OK);
         responseTwoBody.Should().HaveCount(1);
         responseTwoBody.First().Should().BeEquivalentTo(responseUrlItemTwo);
+    }
+
+    [Fact]
+    public async Task GetMyUrls_UserInTokenDoesNotExistInDb_Returns401Unauthorized()
+    {
+        // Arrange
+        var tokenService = _factory.Services.GetRequiredService<ITokenService>();
+
+        var ghostUser = new User(_validUsername, _validPassword);
+        string ghostToken = tokenService.GenerateToken(ghostUser);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            _myUrlsEndpoint
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ghostToken);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }
