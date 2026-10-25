@@ -39,8 +39,10 @@ public class UrlEndpointsTests : IDisposable
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var body = await response.Content.ReadAsStringAsync();
-        body.Should().NotBeNullOrWhiteSpace();
+        var body = await response.Content.ReadFromJsonAsync<ResponseUrlItemDto>();
+        body.Should().NotBeNull();
+        body.OriginalUrl.Should().Be(payload.OriginalUrl);
+        body.UserId.Should().BeNull();
     }
 
     [Fact]
