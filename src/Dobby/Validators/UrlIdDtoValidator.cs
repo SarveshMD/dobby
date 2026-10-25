@@ -12,7 +12,7 @@ public class UrlIdDtoValidator : AbstractValidator<UrlIdDto>
             .Must(id =>
             {
                 bool success = int.TryParse(id, out int intId);
-                return id == id.Trim() && success && intId > 0;
+                return (id is not null) && id == id.Trim() && success && intId > 0;
             }).WithMessage("Invalid UrlId");
     }
 }
