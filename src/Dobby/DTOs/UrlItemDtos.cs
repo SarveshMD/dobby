@@ -9,15 +9,17 @@ public record CreateUrlItemDto(
 public record ResponseUrlItemDto(
     int Id,
     string OriginalUrl,
-    string ShortUrl
+    string ShortUrl,
+    Guid? UserId
 )
 {
     public static ResponseUrlItemDto FromEntityAndShortUrl(UrlItem item, string shortCode)
     {
         return new ResponseUrlItemDto(
-            item.Id,
-            item.OriginalUrl,
-            ShortUrl: shortCode
+            Id: item.Id,
+            OriginalUrl: item.OriginalUrl,
+            ShortUrl: shortCode,
+            UserId: item.UserId
         );
     }
 };
