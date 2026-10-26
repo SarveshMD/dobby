@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Dobby.Models;
 
-namespace Dobby.Database;
+namespace Dobby.Data;
 
 public class UrlDbContext : DbContext
 {
