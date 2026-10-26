@@ -80,6 +80,10 @@ namespace dobby.Migrations
                     b.HasKey("Id")
                         .HasName("pk_users");
 
+                    b.HasIndex("Username")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_username");
+
                     b.ToTable("users", (string)null);
                 });
 
