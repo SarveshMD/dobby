@@ -3,6 +3,7 @@ using Dobby.DTOs;
 using Dobby.Models;
 using Dobby.Services;
 using Dobby.Extensions;
+using Dobby.Endpoints;
 
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -91,6 +92,8 @@ app.UseHttpsRedirection();
 
 app.MapGet("/", () => "What a beautiful place... to be with friends")
 .Produces(StatusCodes.Status200OK);
+
+app.MapAuthEndpoints();
 
 app.MapPost("/api/urls", async (
     UrlDbContext db,
@@ -250,97 +253,6 @@ app.MapDelete("/api/urls/{urlIdString}", async (
 .Produces(StatusCodes.Status401Unauthorized)
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status204NoContent);
-
-app.MapPost("/api/auth/register", async (
-    RegisterRequestDto dto,
-    ITokenService tokenService,
-    UrlDbContext db,
-    IValidator<RegisterRequestDto> validator,
-    CancellationToken ct
-) =>
-{
-    var validationResult = await validator.ValidateAsync(dto, ct);
-
-    if (!validationResult.IsValid)
-    {
-        return Results.ValidationProblem(validationResult.ToDictionary());
-    }
-
-    var usernameExists = await db.Users
-        .AnyAsync(user => user.Username == dto.Username, ct);
-
-    if (usernameExists)
-    {
-        return Results.Conflict("Username is taken");
-    }
-
-    string passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-    var user = new User(
-        dto.Username,
-        passwordHash
-    );
-
-    db.Users.Add(user);
-    await db.SaveChangesAsync(ct);
-
-    string token = tokenService.GenerateToken(user);
-
-    return Results.Created($"/users/{user.Id}", new AuthResponseDto
-    (
-        Message: "Registration Successful",
-        Id: user.Id,
-        Username: user.Username,
-        Token: token
-    ));
-})
-.ProducesValidationProblem()
-.Produces(StatusCodes.Status409Conflict)
-.Produces<AuthResponseDto>(StatusCodes.Status201Created);
-
-app.MapPost("/api/auth/login", async (
-    LoginRequestDto dto,
-    IValidator<LoginRequestDto> validator,
-    ITokenService tokenService,
-    UrlDbContext db,
-    CancellationToken ct
-) =>
-{
-    var validationResult = await validator.ValidateAsync(dto, ct);
-
-    if (!validationResult.IsValid)
-    {
-        return Results.ValidationProblem(validationResult.ToDictionary());
-    }
-
-    var user = await db.Users
-        .FirstOrDefaultAsync(user => user.Username == dto.Username, ct);
-
-    if (user is null)
-    {
-        return Results.Unauthorized();
-    }
-
-    bool isPasswordValid = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
-
-    if (!isPasswordValid)
-    {
-        return Results.Unauthorized();
-    }
-
-    string token = tokenService.GenerateToken(user);
-
-    return Results.Ok(new AuthResponseDto
-    (
-        Message: "Login Successful",
-        Id: user.Id,
-        Username: user.Username,
-        Token: token
-    ));
-})
-.ProducesValidationProblem()
-.Produces(StatusCodes.Status401Unauthorized)
-.Produces<AuthResponseDto>(StatusCodes.Status200OK);
 
 app.Run();
 
