@@ -29,6 +29,9 @@ services:
                 condition: service_healthy
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
+            - Logging__LogLevel__Default=Warning
+            - Logging__LogLevel__Microsoft__AspNetCore=Warning
+            - Logging__LogLevel__Microsoft__EntityFrameworkCore__Database__Command=Warning
             - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dobby_db;Username=sarvesh;Password=olivia
             - UrlShortener__SecretKey=Pap3rT0wns
             - Jwt__Issuer=DobbyBackend
