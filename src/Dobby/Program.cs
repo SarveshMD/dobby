@@ -1,8 +1,5 @@
 using Dobby.Data;
-using Dobby.DTOs;
-using Dobby.Models;
 using Dobby.Services;
-using Dobby.Extensions;
 using Dobby.Endpoints;
 
 using FluentValidation;
@@ -11,7 +8,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
-using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,165 +90,7 @@ app.MapGet("/", () => "What a beautiful place... to be with friends")
 .Produces(StatusCodes.Status200OK);
 
 app.MapAuthEndpoints();
-
-app.MapPost("/api/urls", async (
-    UrlDbContext db,
-    CreateUrlItemDto dto,
-    CancellationToken ct,
-    IValidator<CreateUrlItemDto> validator,
-    IUrlShortenerService urlShortener,
-    ClaimsPrincipal user
-) =>
-{
-    var validationResult = await validator.ValidateAsync(dto, ct);
-
-    if (!validationResult.IsValid)
-    {
-        return Results.ValidationProblem(validationResult.ToDictionary());
-    }
-
-    Guid? userId = null;
-
-    if (user.Identity?.IsAuthenticated == true)
-    {
-        userId = user.GetUserId();
-    }
-
-    var urlItem = new UrlItem(
-        dto.OriginalUrl,
-        userId
-    );
-
-    db.UrlItems.Add(urlItem);
-    await db.SaveChangesAsync(ct);
-
-    string encodedUrl = urlShortener.Encode(urlItem.Id);
-
-    var res = ResponseUrlItemDto.FromEntityAndShortUrl(urlItem, encodedUrl);
-
-    return Results.Created($"/{encodedUrl}", res);
-})
-.ProducesValidationProblem()
-.Produces<ResponseUrlItemDto>(StatusCodes.Status201Created);
-
-app.MapGet("/{shortUrl}", async (
-    string shortUrl,
-    UrlDbContext db,
-    IValidator<GetShortUrlRequest> validator,
-    IUrlShortenerService urlShortener,
-    CancellationToken ct
-) =>
-{
-    var validationResult = await validator.ValidateAsync(new GetShortUrlRequest(shortUrl), ct);
-
-    if (!validationResult.IsValid)
-    {
-        return Results.ValidationProblem(validationResult.ToDictionary());
-    }
-
-    int key = urlShortener.Decode(shortUrl);
-
-    var urlItem = await db.UrlItems
-        .FindAsync(key, ct);
-
-    if (urlItem is null)
-    {
-        return Results.NotFound(new
-        {
-            message = "Short URL was not found",
-            shortUrl
-        });
-    }
-
-    return Results.Redirect(urlItem.OriginalUrl);
-})
-.ProducesValidationProblem()
-.Produces(StatusCodes.Status404NotFound)
-.Produces(StatusCodes.Status307TemporaryRedirect);
-
-app.MapGet("/api/urls/my", async (
-    UrlDbContext db,
-    ClaimsPrincipal principal,
-    IUrlShortenerService urlShortenerService,
-    CancellationToken ct
-) =>
-{
-    var userId = principal.GetUserId();
-    var user = await db.Users
-        .AnyAsync(user => user.Id == userId, ct);
-
-    if (!user)
-    {
-        return Results.Unauthorized();
-    }
-
-    var urlItems = await db.UrlItems
-        .Where(x => x.UserId == userId)
-        .ToListAsync(ct);
-
-    var res = urlItems
-        .OrderBy(x => x.CreatedAt)
-        .Select(x =>
-            ResponseUrlItemDto.FromEntityAndShortUrl(
-                x,
-                urlShortenerService.Encode(x.Id)
-            )
-        );
-
-    return Results.Ok(res);
-})
-.RequireAuthorization()
-.Produces(StatusCodes.Status401Unauthorized)
-.Produces<IEnumerable<ResponseUrlItemDto>>(StatusCodes.Status200OK);
-
-app.MapDelete("/api/urls/{urlIdString}", async (
-    string urlIdString,
-    ClaimsPrincipal principal,
-    UrlDbContext db,
-    IValidator<UrlIdDto> validator,
-    CancellationToken ct
-) =>
-{
-    var userId = principal.GetUserId();
-    var user = await db.Users
-        .AnyAsync(x => x.Id == userId, ct);
-
-    if (!user)
-    {
-        return Results.Unauthorized();
-    }
-
-    var validationResult = await validator.ValidateAsync(new UrlIdDto(urlIdString), ct);
-
-    if (!validationResult.IsValid)
-    {
-        return Results.ValidationProblem(validationResult.ToDictionary());
-    }
-
-    int urlId = int.Parse(urlIdString);
-
-    var urlItem = await db.UrlItems
-        .Where(x => x.UserId == userId)
-        .FirstOrDefaultAsync(x => x.Id == urlId, ct);
-
-    if (urlItem is null)
-    {
-        return Results.NotFound(new
-        {
-            message = "UrlItem with the given UrlId was not found",
-            urlId
-        });
-    }
-
-    db.UrlItems.Remove(urlItem);
-    await db.SaveChangesAsync(ct);
-
-    return Results.NoContent();
-})
-.RequireAuthorization()
-.Produces(StatusCodes.Status401Unauthorized)
-.Produces(StatusCodes.Status404NotFound)
-.Produces(StatusCodes.Status204NoContent);
+app.MapUrlEndpoints();
 
 app.Run();
 
