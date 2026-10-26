@@ -1,0 +1,61 @@
+services:
+    postgres:
+        image: postgres:17-alpine
+        container_name: dobby-postgres
+        restart: always
+        environment:
+            POSTGRES_USER: sarvesh
+            POSTGRES_PASSWORD: olivia
+            POSTGRES_DB: dobby_db
+        ports:
+            - "5432:5432" # Exposed so you can still inspect with psql/DBeaver if needed
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            - dobby-net
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U sarvesh -d dobby_db"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    dobby:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: dobby-api
+        depends_on:
+            postgres:
+                condition: service_healthy
+        environment:
+            - ASPNETCORE_ENVIRONMENT=Development
+            - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dobby_db;Username=sarvesh;Password=olivia
+            - UrlShortener__SecretKey=Pap3rT0wns
+            - Jwt__Issuer=DobbyBackend
+            - Jwt__Audience=DobbyClient
+            - Jwt__Key=A_VERY_LONG_SECRET_KEY_THAT_IS_AT_LEAST_32_BYTES_LONG_FOR_SECURITY
+            - Jwt__ExpiryMinutes=60
+        ports:
+            - "5000:5000"
+        networks:
+            - dobby-net
+
+    k6:
+        image: grafana/k6:latest
+        container_name: dobby-k6
+        profiles: ["benchmark"] # Only runs when explicitly requested
+        depends_on:
+            - dobby
+        volumes:
+            - ./benchmarks:/benchmarks
+        environment:
+            - BASE_URL=http://dobby:5000
+        networks:
+            - dobby-net
+
+volumes:
+    postgres_data:
+
+networks:
+    dobby-net:
+        driver: bridge
