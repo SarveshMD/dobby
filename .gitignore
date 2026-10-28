@@ -5,6 +5,13 @@
 
 # custom
 src/Dobby/Dobby.http
+todo.md
+
+benchmarks/data/*
+!benchmarks/data/.gitkeep
+
+benchmarks/results/*
+!benchmarks/results/.gitkeep
 
 # dotenv files
 .env
