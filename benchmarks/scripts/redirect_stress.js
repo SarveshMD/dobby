@@ -14,16 +14,16 @@ export const options = {
 	maxRedirects: 0,
 
 	stages: [
-		{ duration: "30s", target: 50 }, // Ramp-up to 50 concurrent virtual users
-		{ duration: "1m", target: 50 }, // Stay at 50 VUs for 1 minute (steady state)
-		{ duration: "15s", target: 0 }, // Ramp-down to 0 VUs
+		{ duration: "30s", target: 50 },
+		{ duration: "30s", target: 100 },
+		{ duration: "30s", target: 200 },
+		{ duration: "30s", target: 400 },
+		{ duration: "30s", target: 0 },
 	],
 
 	thresholds: {
-		// 95% of redirects should return under 50ms (Postgres baseline)
-		http_req_duration: ["p(95)<50", "p(99)<100"],
-		// Less than 1% failed requests (excluding 302s)
-		http_req_failed: ["rate<0.01"],
+		http_req_duration: ["p(95)<250", "p(99)<750"],
+		http_req_failed: ["rate<0.02"],
 	},
 };
 
@@ -49,5 +49,5 @@ export default function () {
 }
 
 export function handleSummary(data) {
-	return generateSummary("redirect_random", data);
+	return generateSummary("redirect_stress", data);
 }
