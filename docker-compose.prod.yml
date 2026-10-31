@@ -1,0 +1,43 @@
+services:
+    postgres:
+        image: postgres:17-alpine
+        container_name: dobby-postgres
+        restart: always
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        ports:
+            - "127.0.0.1:5432:5432" # Keep PostgreSQL private to the VM
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            - dobby-net
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    dobby:
+        image: sarveshmd/dobby:${DOBBY_IMAGE_TAG}
+        container_name: dobby-api
+        depends_on:
+            postgres:
+                condition: service_healthy
+        environment:
+            - ASPNETCORE_ENVIRONMENT=Production
+            - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+            - UrlShortener__SecretKey=${URL_SHORTENER_SECRET_KEY}
+            - Jwt__Key=${JWT_SECRET_KEY}
+        ports:
+            - "5000:5000"
+        networks:
+            - dobby-net
+
+volumes:
+    postgres_data:
+
+networks:
+    dobby-net:
+        driver: bridge
