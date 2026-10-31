@@ -73,19 +73,49 @@ A high-performance, authenticated URL shortener and redirect engine built with A
 - [Redis](https://redis.io/) (via Docker or local install)
 
 ### Setup
-```bash
+```powershell
 # Clone the repository
 git clone https://github.com/SarveshMD/dobby.git
 cd dobby
 
 # Restore dependencies
 dotnet restore
-
-# Run database migrations
-dotnet ef database update
-
-# Launch the API
-dotnet run
+Copy-Item .env.example .env
 ```
+
+Replace the placeholder values in `.env`, then start PostgreSQL for the local development loop:
+
+```powershell
+docker compose up -d postgres
+```
+
+The API itself runs locally for fast reload and debugger support. Store its local secrets with .NET User Secrets:
+
+```powershell
+dotnet user-secrets init --project src/Dobby
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=dobby_db;Username=sarvesh;Password=<your-password>" --project src/Dobby
+dotnet user-secrets set "UrlShortener:SecretKey" "<your-shortener-secret>" --project src/Dobby
+dotnet user-secrets set "Jwt:Key" "<your-jwt-secret>" --project src/Dobby
+```
+
+Run the API locally:
+
+```powershell
+dotnet watch --project src/Dobby --launch-profile http
+```
+
+To verify the complete containerized setup instead:
+
+```powershell
+docker compose up -d --build
+```
+
+Run database migrations against the local PostgreSQL container with the local API configuration:
+
+```powershell
+dotnet ef database update --project src/Dobby
+```
+
+The root `.env` is read by Docker Compose only. The application does not parse `.env` files itself.
 
 Gemini wrote this.

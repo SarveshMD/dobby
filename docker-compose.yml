@@ -4,9 +4,9 @@ services:
         container_name: dobby-postgres
         restart: always
         environment:
-            POSTGRES_USER: sarvesh
-            POSTGRES_PASSWORD: olivia
-            POSTGRES_DB: dobby_db
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
         ports:
             - "5432:5432" # Exposed so you can still inspect with psql/DBeaver if needed
         volumes:
@@ -14,7 +14,7 @@ services:
         networks:
             - dobby-net
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U sarvesh -d dobby_db"]
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -29,15 +29,9 @@ services:
                 condition: service_healthy
         environment:
             - ASPNETCORE_ENVIRONMENT=Development
-            - Logging__LogLevel__Default=Warning
-            - Logging__LogLevel__Microsoft__AspNetCore=Warning
-            - Logging__LogLevel__Microsoft__EntityFrameworkCore__Database__Command=Warning
-            - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=dobby_db;Username=sarvesh;Password=olivia
-            - UrlShortener__SecretKey=Pap3rT0wns
-            - Jwt__Issuer=DobbyBackend
-            - Jwt__Audience=DobbyClient
-            - Jwt__Key=A_VERY_LONG_SECRET_KEY_THAT_IS_AT_LEAST_32_BYTES_LONG_FOR_SECURITY
-            - Jwt__ExpiryMinutes=60
+            - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+            - UrlShortener__SecretKey=${URL_SHORTENER_SECRET_KEY}
+            - Jwt__Key=${JWT_SECRET_KEY}
         ports:
             - "5000:5000"
         networks:

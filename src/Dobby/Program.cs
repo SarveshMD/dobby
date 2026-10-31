@@ -35,11 +35,15 @@ if (!builder.Environment.IsEnvironment("Testing"))
     });
 }
 
+builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
 
-var secretKeyString = builder.Configuration["UrlShortener:SecretKey"]
-    ?? throw new InvalidOperationException("Skip32 secret key is missing from configuration");
+    var secretKeyString = config["UrlShortener:SecretKey"]
+        ?? throw new InvalidOperationException("Skip32 secret key is missing from configuration");
 
-builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(_ => new UrlShortener(secretKeyString));
+    return new UrlShortener(secretKeyString);
+});
 
 builder.Services.AddSingleton<ITokenService, TokenService>();
 
@@ -84,7 +88,10 @@ if (app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHttpsRedirection();
+}
 
 app.MapGet("/", () => "What a beautiful place... to be with friends")
 .Produces(StatusCodes.Status200OK);
