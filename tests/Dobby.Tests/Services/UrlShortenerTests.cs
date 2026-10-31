@@ -150,4 +150,36 @@ public class UrlShortenerTests
         act.Should().Throw<ArgumentException>();
     }
 
+    [Theory]
+    [InlineData("000000")]
+    [InlineData("000001")]
+    [InlineData("111111")]
+    [InlineData("2lkCB1")] // int.MaxVal in Base62
+    [InlineData("4GFfc2")] // uint.MaxVal - 1 in Base62
+    [InlineData("4GFfc3")] // uint.MaxVal in Base62
+    public void Decode_Base62CodesInsideSkip32Range_ShouldNotThrowArgumentOutOfRangeException(string validCode)
+    {
+        // Arrange
+        var sut = CreateSut();
+        var act = () => sut.Decode(validCode);
+
+        // Act and Assert
+        act.Should().NotThrow<ArgumentOutOfRangeException>();
+    }
+
+    [Theory]
+    [InlineData("4GFfc4")] // uint.MaxVal + 1 in Base62
+    [InlineData("4GFfc5")]
+    [InlineData("500000")]
+    [InlineData("a00000")]
+    [InlineData("ZZZZZZ")]
+    public void Decode_Base62CodesOutOfSkip32Range_ThrowsArgumentOutOfRangeException(string invalidCode)
+    {
+        // Arrange
+        var sut = CreateSut();
+        var act = () => sut.Decode(invalidCode);
+
+        // Act and Assert
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
 }

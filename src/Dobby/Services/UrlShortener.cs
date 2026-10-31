@@ -8,18 +8,21 @@ public class UrlShortener : IUrlShortenerService
 {
     private readonly Skip32Cipher _skip32 = null!;
     private const string SixtyTwoChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private readonly static int[] LookupTable = new int[128];
+    private static readonly int[] LookupTable = new int[128];
 
-    public UrlShortener(string secretKey)
+    static UrlShortener()
     {
-        _skip32 = new Skip32Cipher(Encoding.UTF8.GetBytes(secretKey));
-
         Array.Fill(LookupTable, -1);
 
         for (int i = 0; i < 62; i++)
         {
             LookupTable[SixtyTwoChars[i]] = i;
         }
+    }
+
+    public UrlShortener(string secretKey)
+    {
+        _skip32 = new Skip32Cipher(Encoding.UTF8.GetBytes(secretKey));
     }
 
     public string Encode(int num)
@@ -54,7 +57,7 @@ public class UrlShortener : IUrlShortenerService
             throw new ArgumentException($"Short Code must be exactly 6 characters.", nameof(code));
         }
 
-        uint scrambled = 0;
+        ulong scrambled = 0;
 
         foreach (char c in code)
         {
@@ -64,6 +67,11 @@ public class UrlShortener : IUrlShortenerService
             }
 
             scrambled = (scrambled * 62) + (uint)LookupTable[c];
+        }
+
+        if (scrambled > uint.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(code), $"Base62 Short Code '{code}' is out of range (greater than {uint.MaxValue}).");
         }
 
         int encrypted = unchecked((int)scrambled);
