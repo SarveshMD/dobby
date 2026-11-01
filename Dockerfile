@@ -18,7 +18,7 @@ COPY --from=build /out ./
 
 # Set environment defaults for the container
 ENV ASPNETCORE_URLS=http://+:5000
-ENV ASPNETCORE_ENVIRONMENT=Development
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 EXPOSE 5000
 ENTRYPOINT ["dotnet", "Dobby.dll"]
