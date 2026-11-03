@@ -173,10 +173,19 @@ public static class UrlEndpoints
             return Results.ValidationProblem(validationResult.ToDictionary());
         }
 
-        int key = urlShortener.Decode(shortUrl);
-
         var redisDb = await redisService.GetDatabase();
-        Console.WriteLine(await redisDb.StringGetAsync("foo"));
+
+        var redisRes = await redisDb.StringGetAsync(shortUrl);
+
+        if (!redisRes.IsNullOrEmpty)
+        {
+            Console.WriteLine($"FOUND {shortUrl} in Redis Cache. {redisRes}");
+            return Results.Redirect(redisRes.ToString());
+        }
+
+        Console.WriteLine($"{shortUrl} not in redis cache");
+
+        int key = urlShortener.Decode(shortUrl);
 
         var urlItem = await db.UrlItems
             .FindAsync(key, ct);
@@ -189,6 +198,8 @@ public static class UrlEndpoints
                 shortUrl
             });
         }
+
+        await redisDb.StringSetAsync(shortUrl, urlItem.OriginalUrl);
 
         return Results.Redirect(urlItem.OriginalUrl);
     }
