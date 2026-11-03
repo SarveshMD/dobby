@@ -46,6 +46,7 @@ builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(sp =>
 });
 
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddSingleton<IRedisService, RedisService>();
 
 builder.Services.AddAuthentication(options =>
 {

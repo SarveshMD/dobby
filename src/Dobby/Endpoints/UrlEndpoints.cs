@@ -4,6 +4,7 @@ using Dobby.Services;
 using Dobby.Models;
 using Dobby.Extensions;
 
+using StackExchange.Redis;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -161,6 +162,7 @@ public static class UrlEndpoints
         UrlDbContext db,
         IValidator<GetShortUrlRequest> validator,
         IUrlShortenerService urlShortener,
+        IRedisService redisService,
         CancellationToken ct
     )
     {
@@ -172,6 +174,9 @@ public static class UrlEndpoints
         }
 
         int key = urlShortener.Decode(shortUrl);
+
+        var redisDb = await redisService.GetDatabase();
+        Console.WriteLine(await redisDb.StringGetAsync("foo"));
 
         var urlItem = await db.UrlItems
             .FindAsync(key, ct);
