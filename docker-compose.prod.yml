@@ -39,6 +39,7 @@ services:
             - "~url:*"
             - "+@read"
             - "+@write"
+            - "+@connection"
 
     dobby:
         image: sarveshmd/dobby:${DOBBY_IMAGE_TAG}

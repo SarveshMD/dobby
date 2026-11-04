@@ -39,6 +39,7 @@ services:
             - "~url:*"
             - "+@read"
             - "+@write"
+            - "+@connection"
 
     dobby:
         build:
