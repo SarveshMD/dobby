@@ -19,17 +19,41 @@ services:
             timeout: 5s
             retries: 5
 
+    redis:
+        image: redis:7.4-alpine
+        container_name: dobby-redis
+        restart: always
+        environment:
+            REDIS_USER: ${REDIS_USER}
+            REDIS_PASSWORD: ${REDIS_PASSWORD}
+        ports:
+            - "127.0.0.1:6379:6379"
+        networks:
+            - dobby-net
+        command:
+            - "redis-server"
+            - "--user"
+            - "${REDIS_USER}"
+            - "on"
+            - ">${REDIS_PASSWORD}"
+            - "~url:*"
+            - "+@read"
+            - "+@write"
+
     dobby:
         image: sarveshmd/dobby:${DOBBY_IMAGE_TAG}
         container_name: dobby-api
         depends_on:
             postgres:
                 condition: service_healthy
+            redis:
+                condition: service_started
         environment:
             - ASPNETCORE_ENVIRONMENT=Production
             - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
             - UrlShortener__SecretKey=${URL_SHORTENER_SECRET_KEY}
             - Jwt__Key=${JWT_SECRET_KEY}
+            - Redis__ConnectionString=redis:6379,user=${REDIS_USER},password=${REDIS_PASSWORD}
         ports:
             - "5000:5000"
         networks:
