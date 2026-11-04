@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using System.Text;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +47,20 @@ builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(sp =>
 });
 
 builder.Services.AddSingleton<ITokenService, TokenService>();
-builder.Services.AddSingleton<IRedisService, RedisService>();
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var connectionString = config["Redis:ConnectionString"]
+        ?? throw new InvalidOperationException("Redis connection string is not configured");
+
+    return ConnectionMultiplexer.Connect(connectionString);
+});
+
+builder.Services.AddScoped(sp =>
+{
+    return sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase();
+});
 
 builder.Services.AddAuthentication(options =>
 {

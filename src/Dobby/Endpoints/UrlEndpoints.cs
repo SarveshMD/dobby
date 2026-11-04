@@ -162,7 +162,7 @@ public static class UrlEndpoints
         UrlDbContext db,
         IValidator<GetShortUrlRequest> validator,
         IUrlShortenerService urlShortener,
-        IRedisService redisService,
+        IDatabase redisDb,
         CancellationToken ct
     )
     {
@@ -172,8 +172,6 @@ public static class UrlEndpoints
         {
             return Results.ValidationProblem(validationResult.ToDictionary());
         }
-
-        var redisDb = await redisService.GetDatabase();
 
         var redisRes = await redisDb.StringGetAsync(shortUrl);
 
