@@ -117,6 +117,8 @@ public static class UrlEndpoints
         ClaimsPrincipal principal,
         UrlDbContext db,
         IValidator<UrlIdDto> validator,
+        IUrlShortenerService urlShortener,
+        IDatabase redisDb,
         CancellationToken ct
     )
     {
@@ -154,6 +156,9 @@ public static class UrlEndpoints
         db.UrlItems.Remove(urlItem);
         await db.SaveChangesAsync(ct);
 
+        string shortUrl = urlShortener.Encode(urlId);
+        await redisDb.KeyDeleteAsync($"url:{shortUrl}");
+
         return Results.NoContent();
     }
 
@@ -173,7 +178,9 @@ public static class UrlEndpoints
             return Results.ValidationProblem(validationResult.ToDictionary());
         }
 
-        var redisRes = await redisDb.StringGetAsync(shortUrl);
+        string cacheKey = $"url:{shortUrl}";
+
+        var redisRes = await redisDb.StringGetAsync(cacheKey);
 
         if (!redisRes.IsNullOrEmpty)
         {
@@ -197,7 +204,7 @@ public static class UrlEndpoints
             });
         }
 
-        await redisDb.StringSetAsync(shortUrl, urlItem.OriginalUrl);
+        await redisDb.StringSetAsync(cacheKey, urlItem.OriginalUrl);
 
         return Results.Redirect(urlItem.OriginalUrl);
     }

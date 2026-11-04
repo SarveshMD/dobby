@@ -57,10 +57,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     return ConnectionMultiplexer.Connect(connectionString);
 });
 
-builder.Services.AddScoped(sp =>
-{
-    return sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase();
-});
+builder.Services.AddScoped<IDatabase>(sp =>
+    sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase()
+);
 
 builder.Services.AddAuthentication(options =>
 {
