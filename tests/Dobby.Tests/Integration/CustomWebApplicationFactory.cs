@@ -24,7 +24,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["Jwt:Issuer"] = "DobbyBackend",
                 ["Jwt:Audience"] = "DobbyClient",
                 ["Jwt:Key"] = "A_VERY_LONG_SECRET_KEY_THAT_IS_AT_LEAST_32_BYTES_LONG_FOR_SECURITY",
-                ["Jwt:ExpiryMinutes"] = "60"
+                ["Jwt:ExpiryMinutes"] = "60",
+                ["Redis:ConnectionString"] = "localhost:6379"
             });
         });
 
