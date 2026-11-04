@@ -119,6 +119,7 @@ public static class UrlEndpoints
         IValidator<UrlIdDto> validator,
         IUrlShortenerService urlShortener,
         IDatabase redisDb,
+        ILogger<Program> logger,
         CancellationToken ct
     )
     {
@@ -157,7 +158,16 @@ public static class UrlEndpoints
         await db.SaveChangesAsync(ct);
 
         string shortUrl = urlShortener.Encode(urlId);
-        await redisDb.KeyDeleteAsync($"url:{shortUrl}");
+
+        try
+        {
+            await redisDb.KeyDeleteAsync($"url:{shortUrl}");
+        }
+        catch (RedisException ex)
+        {
+            logger.LogWarning(ex, "Redis cache DELETE operation failed for shortUrl: {ShortUrl}.", shortUrl);
+        }
+
 
         return Results.NoContent();
     }
@@ -168,6 +178,7 @@ public static class UrlEndpoints
         IValidator<GetShortUrlRequest> validator,
         IUrlShortenerService urlShortener,
         IDatabase redisDb,
+        ILogger<Program> logger,
         CancellationToken ct
     )
     {
@@ -180,20 +191,26 @@ public static class UrlEndpoints
 
         string cacheKey = $"url:{shortUrl}";
 
-        var redisRes = await redisDb.StringGetAsync(cacheKey);
+        var redisRes = RedisValue.Null;
+
+        try
+        {
+            redisRes = await redisDb.StringGetAsync(cacheKey);
+        }
+        catch (RedisException ex)
+        {
+            logger.LogWarning(ex, "Redis cache GET operation failed for shortUrl: {ShortUrl}. Falling back to DB.", shortUrl);
+        }
 
         if (!redisRes.IsNullOrEmpty)
         {
-            Console.WriteLine($"FOUND {shortUrl} in Redis Cache. {redisRes}");
             return Results.Redirect(redisRes.ToString());
         }
-
-        Console.WriteLine($"{shortUrl} not in redis cache");
 
         int key = urlShortener.Decode(shortUrl);
 
         var urlItem = await db.UrlItems
-            .FindAsync(key, ct);
+            .FirstOrDefaultAsync(item => item.Id == key, ct);
 
         if (urlItem is null)
         {
@@ -204,7 +221,14 @@ public static class UrlEndpoints
             });
         }
 
-        await redisDb.StringSetAsync(cacheKey, urlItem.OriginalUrl);
+        try
+        {
+            await redisDb.StringSetAsync(cacheKey, urlItem.OriginalUrl, TimeSpan.FromHours(24));
+        }
+        catch (RedisException ex)
+        {
+            logger.LogWarning(ex, "Redis cache SET operation failed for shortUrl: {ShortUrl}", shortUrl);
+        }
 
         return Results.Redirect(urlItem.OriginalUrl);
     }
