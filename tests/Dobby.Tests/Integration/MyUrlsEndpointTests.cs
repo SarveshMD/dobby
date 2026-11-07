@@ -5,36 +5,25 @@ using Dobby.DTOs;
 using Dobby.Models;
 using Dobby.Services;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Dobby.Tests.Integration;
 
-public class MyUrlsEndpointTests : IDisposable
+public class MyUrlsEndpointTests : BaseIntegrationTest
 {
-    private readonly CustomWebApplicationFactory _factory;
-    private readonly HttpClient _client;
-    private readonly string _validUsername = "ValdiUsername";
     private readonly string _validPassword = "ValidPassword";
     private readonly string _myUrlsEndpoint = "/api/urls/my";
 
-    public MyUrlsEndpointTests()
+    public MyUrlsEndpointTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = new CustomWebApplicationFactory();
-        _client = _factory.CreateClient();
-    }
-
-    public void Dispose()
-    {
-        _client.Dispose();
-        _factory.Dispose();
     }
 
     [Fact]
     public async Task GetMyUrls_AuthenticatedUserWithNoUrls_Returns200OkWithEmptyBody()
     {
         // Arrange
-        var (_, _, body) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, body) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         var token = body.Token;
 
         var request = new HttpRequestMessage(
@@ -56,7 +45,8 @@ public class MyUrlsEndpointTests : IDisposable
     public async Task GetMyUrls_AuthenticatedUserWithSomeUrls_Returns200OkWithCreatedItemsInBodyOrderedByCreationTime()
     {
         // Arrange
-        var (_, _, body) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, body) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         var token = body.Token;
 
         string[] urls =
@@ -166,7 +156,8 @@ public class MyUrlsEndpointTests : IDisposable
         // Arrange
         var tokenService = _factory.Services.GetRequiredService<ITokenService>();
 
-        var ghostUser = new User(_validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var ghostUser = new User(randUsername, _validPassword);
         string ghostToken = tokenService.GenerateToken(ghostUser);
 
         var request = new HttpRequestMessage(

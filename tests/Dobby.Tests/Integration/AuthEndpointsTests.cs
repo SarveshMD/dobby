@@ -8,33 +8,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Dobby.Tests.Integration;
 
-public class AuthEndpointsTests : IDisposable
+public class AuthEndpointsTests : BaseIntegrationTest
 {
-    private readonly CustomWebApplicationFactory _factory;
-    private readonly HttpClient _client;
-    private readonly string _validUsername = "ValdiUsername";
     private readonly string _validPassword = "ValidPassword";
     private readonly string _myUrlsEndpoint = "/api/urls/my";
     private readonly string _registerEndpoint = "/api/auth/register";
     private readonly string _loginEndpoint = "/api/auth/login";
 
-    public AuthEndpointsTests()
+    public AuthEndpointsTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = new CustomWebApplicationFactory();
-        _client = _factory.CreateClient();
-    }
-
-    public void Dispose()
-    {
-        _client.Dispose();
-        _factory.Dispose();
     }
 
     [Fact]
     public async Task PostRegister_WithDuplicateUsername_Returns409Conflict()
     {
         // Arrange
-        var payload = new RegisterRequestDto(_validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var payload = new RegisterRequestDto(randUsername, _validPassword);
 
         // Act
         await _client.PostAsJsonAsync(_registerEndpoint, payload);
@@ -145,7 +135,8 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostRegister_WithValidPayload_ReturnsJwtTokenAcceptedByProtectedEndpoint()
     {
         // Arrange
-        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         var token = user.body.Token;
 
         var request = new HttpRequestMessage(
@@ -167,7 +158,8 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithValidPayload_Returns200OkAndAuthResponseDto()
     {
         // Arrange
-        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         var payload = new LoginRequestDto(user.Username, user.Password);
 
         // Act
@@ -189,7 +181,8 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithValidPayload_ReturnsJwtTokenAcceptedByProtectedEndpoint()
     {
         // Arrange
-        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         var loginPayload = new LoginRequestDto(user.Username, user.Password);
         var loginResponse = await _client.PostAsJsonAsync(
             _loginEndpoint,
@@ -219,7 +212,8 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithUnknownUsername_Returns401Unauthorized()
     {
         // Arrange
-        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         var payload = new LoginRequestDto("UnknownUsername", user.Password);
 
         // Act
@@ -233,7 +227,8 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithInvalidPassword_Returns401Unauthorized()
     {
         // Arrange
-        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var user = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         var payload = new LoginRequestDto(user.Username, "InvalidPassword");
 
         // Act
@@ -269,7 +264,8 @@ public class AuthEndpointsTests : IDisposable
     public async Task PostLogin_WithEmptyPassword_Returns400BadRequest()
     {
         // Arrange
-        var payload = new LoginRequestDto(_validUsername, "");
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var payload = new LoginRequestDto(randUsername, "");
 
         // Act
         var response = await _client.PostAsJsonAsync(_loginEndpoint, payload);

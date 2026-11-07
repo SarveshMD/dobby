@@ -6,29 +6,13 @@ using FluentAssertions;
 
 namespace Dobby.Tests.Integration;
 
-public class UrlEndpointsTests : IDisposable
+public class UrlEndpointsTests : BaseIntegrationTest
 {
-    private readonly CustomWebApplicationFactory _factory;
-    private readonly HttpClient _client;
-    private readonly string _validUsername = "ValdiUsername";
     private readonly string _validPassword = "ValidPassword";
     private readonly string _urlsEndpoint = "/api/urls";
 
-    public UrlEndpointsTests()
+    public UrlEndpointsTests(CustomWebApplicationFactory factory) : base(factory)
     {
-        _factory = new CustomWebApplicationFactory();
-        _client = _factory.CreateClient(
-            new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-            {
-                AllowAutoRedirect = false // block HttpClient from following 302 redirects
-            }
-        );
-    }
-
-    public void Dispose()
-    {
-        _client.Dispose();
-        _factory.Dispose();
     }
 
     [Fact]
@@ -85,7 +69,8 @@ public class UrlEndpointsTests : IDisposable
     public async Task PostUrl_WithValidPayloadAndAuthorization_Returns201CreatedAndResponseDtoWithUserId()
     {
         // Arrange
-        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
         string url = "https://letterboxd.com/film/premalu/";
 
         // Act
@@ -113,7 +98,8 @@ public class UrlEndpointsTests : IDisposable
     public async Task DeleteUrl_AuthorizedButNotOwned_Returns404NotFound()
     {
         // Arrange
-        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
 
         string url = "https://www.youtube.com/watch?v=W2twcSFYlt0";
         var anonymousUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url);
@@ -135,7 +121,8 @@ public class UrlEndpointsTests : IDisposable
     public async Task DeleteUrl_AuthorizedAndOwned_Returns204NoContent()
     {
         // Arrange
-        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
 
         string url = "https://letterboxd.com/film/la-la-land/";
         var userOwnedUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url, userBody.Token);
@@ -158,7 +145,8 @@ public class UrlEndpointsTests : IDisposable
     [Fact]
     public async Task DeleteUrl_AfterDeletingIt_Returns404NotFound()
     {
-        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
 
         string url = "https://letterboxd.com/film/mean-girls/";
         var userOwnedUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url, userBody.Token);
@@ -192,7 +180,8 @@ public class UrlEndpointsTests : IDisposable
     [InlineData("101492 ")]
     public async Task DeleteUrl_WithBadUrlId_Returns400BadRequest(string urlId)
     {
-        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, _validUsername, _validPassword);
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
 
         var request = new HttpRequestMessage(
             HttpMethod.Delete,

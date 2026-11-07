@@ -14,27 +14,29 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddOpenApi();
+}
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-if (!builder.Environment.IsEnvironment("Testing"))
+builder.Services.AddDbContext<UrlDbContext>(optionsBuilder =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    builder.Services.AddDbContext<UrlDbContext>(optionsBuilder =>
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Default database connection string is missing from configuration");
+
+    optionsBuilder
+        .UseNpgsql(connectionString)
+        .UseSnakeCaseNamingConvention();
+
+    if (builder.Environment.IsDevelopment())
     {
         optionsBuilder
-            .UseNpgsql(connectionString)
-            .UseSnakeCaseNamingConvention();
-
-        if (builder.Environment.IsDevelopment())
-        {
-            optionsBuilder
-                .EnableSensitiveDataLogging()
-                .LogTo(Console.WriteLine, LogLevel.Information);
-        }
-    });
-}
+            .EnableSensitiveDataLogging()
+            .LogTo(Console.WriteLine, LogLevel.Information);
+    }
+});
 
 builder.Services.AddSingleton<IUrlShortenerService, UrlShortener>(sp =>
 {

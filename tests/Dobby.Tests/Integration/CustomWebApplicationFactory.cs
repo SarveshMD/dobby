@@ -1,16 +1,23 @@
 using Dobby.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Testcontainers.PostgreSql;
 
 
 namespace Dobby.Tests.Integration;
 
-public class CustomWebApplicationFactory : WebApplicationFactory<Program>
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly string _databaseName = Guid.NewGuid().ToString();
+    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:17-alpine")
+        .WithDatabase("dobby_db")
+        .WithUsername("postgres")
+        .WithPassword("postgres")
+        .Build();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -25,17 +32,38 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["Jwt:Audience"] = "DobbyClient",
                 ["Jwt:Key"] = "A_VERY_LONG_SECRET_KEY_THAT_IS_AT_LEAST_32_BYTES_LONG_FOR_SECURITY",
                 ["Jwt:ExpiryMinutes"] = "60",
-                ["Redis:ConnectionString"] = "localhost:6379"
+                ["Redis:ConnectionString"] = "localhost:6379",
+                ["ConnectionStrings:DefaultConnection"] = "Host=localhost"
             });
         });
 
-        builder.ConfigureServices(services =>
+        builder.ConfigureTestServices(services =>
         {
+            services.RemoveAll<DbContextOptions<UrlDbContext>>();
+            services.RemoveAll<UrlDbContext>();
+
             services.AddDbContext<UrlDbContext>(options =>
             {
-                options.UseInMemoryDatabase(_databaseName);
+                options
+                    .UseNpgsql(_dbContainer.GetConnectionString())
+                    .UseSnakeCaseNamingConvention();
             });
         });
+    }
 
+    public async Task InitializeAsync()
+    {
+        await _dbContainer.StartAsync();
+
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<UrlDbContext>();
+
+        await db.Database.MigrateAsync();
+    }
+
+    public new async Task DisposeAsync()
+    {
+        await _dbContainer.DisposeAsync();
+        await base.DisposeAsync();
     }
 }

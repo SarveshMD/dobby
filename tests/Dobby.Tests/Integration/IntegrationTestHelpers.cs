@@ -21,9 +21,10 @@ public static class IntegrationTestHelpers
             payload
         );
 
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
         var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
         body.Should().NotBeNull();
 
         return (username, password, body);
@@ -49,5 +50,10 @@ public static class IntegrationTestHelpers
         responseUrlItemDto.Should().NotBeNull();
 
         return responseUrlItemDto;
+    }
+
+    public static string RandomUsername()
+    {
+        return $"user-{Guid.NewGuid():N}"[..30];
     }
 }
