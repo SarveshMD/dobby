@@ -7,10 +7,15 @@ services:
     ports:
       - "6379:6379"
 
+  db-migrator:
+    build:
+      context: .
+      target: migration
+
   dobby:
     build:
       context: .
-      dockerfile: Dockerfile
+      target: runtime
     environment:
       ASPNETCORE_ENVIRONMENT: Development
     ports:

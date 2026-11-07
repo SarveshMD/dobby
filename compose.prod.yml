@@ -1,6 +1,9 @@
 services:
+  db-migrator:
+    image: sarveshmd/dobby-migrator:${DOBBY_IMAGE_TAG:-latest}
+
   dobby:
-    image: sarveshmd/dobby:${DOBBY_IMAGE_TAG}
+    image: sarveshmd/dobby:${DOBBY_IMAGE_TAG:-latest}
     environment:
       ASPNETCORE_ENVIRONMENT: Production
     ports:
