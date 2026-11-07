@@ -1,0 +1,30 @@
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  dobby:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "5000:5000"
+
+  k6:
+    image: grafana/k6:latest
+    profiles:
+      - benchmark
+    depends_on:
+      - dobby
+    volumes:
+      - ./benchmarks:/benchmarks
+    environment:
+      BASE_URL: http://dobby:5000
+    networks:
+      - dobby-net
