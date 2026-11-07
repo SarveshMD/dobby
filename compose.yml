@@ -23,18 +23,34 @@ services:
     networks:
       - dobby-net
 
+  db-migrator:
+    build:
+      context: .
+      target: migration
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - dobby-net
+
   dobby:
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      db-migrator:
+        condition: service_completed_successfully
     environment:
       ASPNETCORE_URLS: http://+:5000
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       UrlShortener__SecretKey: ${URL_SHORTENER_SECRET_KEY}
       Jwt__Key: ${JWT_SECRET_KEY}
       Redis__ConnectionString: redis:6379
+    restart: unless-stopped
 
     networks:
       - dobby-net

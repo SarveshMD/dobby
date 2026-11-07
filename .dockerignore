@@ -4,4 +4,6 @@
 **/bin
 **/obj
 benchmarks/results
+tests/
 .env
+*.md

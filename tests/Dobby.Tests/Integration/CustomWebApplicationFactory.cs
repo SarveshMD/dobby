@@ -37,7 +37,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
                 ["Jwt:Key"] = "A_VERY_LONG_SECRET_KEY_THAT_IS_AT_LEAST_32_BYTES_LONG_FOR_SECURITY",
                 ["Jwt:ExpiryMinutes"] = "60",
                 ["Redis:ConnectionString"] = $"{_redisContainer.GetConnectionString()}",
-                ["ConnectionStrings:DefaultConnection"] = "Host=localhost"
+                ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Database=dummy"
             });
         });
 
