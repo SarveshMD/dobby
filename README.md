@@ -8,7 +8,7 @@ A high-performance, authenticated URL shortener and redirect engine built with A
 
 ## Architecture Overview
 
-- **Runtime**: .NET 8 / 9 (ASP.NET Core Minimal APIs)
+- **Runtime**: .NET 10 (ASP.NET Core Minimal APIs)
 - **Database**: PostgreSQL via Entity Framework Core
 - **Cache**: Redis / Distributed Cache (sub-millisecond redirects)
 - **Identity & Security**: Custom JWT Bearer Auth with BCrypt password hashing
@@ -34,10 +34,10 @@ A high-performance, authenticated URL shortener and redirect engine built with A
   - Implement `POST /api/urls` with FluentValidation for URL URI schemes
   - Handle idempotency (return existing short code if identical long URL exists)
   > Skip idempotency handling, (tradeoff memory for write speed - handling idempotency will take an extra read for every write)
-- [ ] **Phase 5: High-Performance Caching**
+- [x] **Phase 5: High-Performance Caching**
   - Integrate Redis cache on the `GET /{code}` path (Cache-Aside pattern)
   - Benchmark database vs. cache-hit redirect response latency
-- [ ] **Phase 6: Auth & Analytics Integration**
+- [x] **Phase 6: Auth & Analytics Integration**
   - Port zero-trust JWT Bearer authentication pipeline
   - Scope URL management and click metrics (`GET /api/urls/my`) to authenticated user identity
 
@@ -69,7 +69,7 @@ A high-performance, authenticated URL shortener and redirect engine built with A
 
 ### Prerequisites
 - [.NET SDK](https://dotnet.microsoft.com/)
-- [PostgreSQL](https://www.postgresql.org/)
+- [PostgreSQL](https://www.postgresql.org/) (via Docker or local install)
 - [Redis](https://redis.io/) (via Docker or local install)
 
 ### Setup
@@ -86,7 +86,7 @@ Copy-Item .env.example .env
 Replace the placeholder values in `.env`, then start PostgreSQL for the local development loop:
 
 ```powershell
-docker compose up -d postgres
+docker compose -f compose.yml -f compose.dev.yml up -d
 ```
 
 The API itself runs locally for fast reload and debugger support. Store its local secrets with .NET User Secrets:
