@@ -53,9 +53,8 @@ A high-performance, authenticated URL shortener built with ASP.NET Core Minimal 
 | :------- | :--------------- | :---------------- | :-------------------------------------------- | :------------------------- | :-------------------------------------- |
 | `POST`   | `/api/urls`      | Optional / Bearer | Shortens a URL (anonymous or logged-in)       | `ResponseUrlItemDto`       | 201 Created                             |
 | `GET`    | `/api/urls/my`   | Bearer            | Returns all shortened URLs for logged-in user | `List<ResponseUrlItemDto>` | 200 Ok / 401 Unauthorized               |
+| `GET`    | `/api/urls/{id}` | Bearer            | Returns details of the specified URL Item     | `ResponseUrlItemDto`       | 200 Ok / 401 Unauthorized / 404         |
 | `DELETE` | `/api/urls/{id}` | Bearer            | Removes a short URL (scoped to owner)         | -                          | 204 No Content / 401 Unauthorized / 404 |
-
-> TODO: | `GET` | `/api/urls/{id}` | Bearer | Returns details of the specified URL Item | `ResponseUrlItemDto` | 200 Ok / 401 Unauthorized / 404 |
 
 ### Identity
 

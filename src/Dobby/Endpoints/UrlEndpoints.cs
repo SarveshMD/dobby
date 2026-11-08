@@ -27,7 +27,7 @@ public static class UrlEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<IEnumerable<ResponseUrlItemDto>>(StatusCodes.Status200OK);
 
-        group.MapGet("/my/{urlIdString}", GetMyUrlAsync)
+        group.MapGet("/{urlIdString}", GetUrlAsync)
             .RequireAuthorization()
             .ProducesValidationProblem()
             .Produces(StatusCodes.Status401Unauthorized)
@@ -120,7 +120,7 @@ public static class UrlEndpoints
         return Results.Ok(res);
     }
 
-    private static async Task<IResult> GetMyUrlAsync(
+    private static async Task<IResult> GetUrlAsync(
         string urlIdString,
         IValidator<UrlIdDto> validator,
         UrlDbContext db,
