@@ -50,6 +50,28 @@ public class UrlShortener : IUrlShortenerService
         return new string(res);
     }
 
+    public bool IsValidCode(string code)
+    {
+        if (code is null || code.Length != 6)
+        {
+            return false;
+        }
+
+        ulong scrambled = 0;
+
+        foreach (char c in code)
+        {
+            if (c >= LookupTable.Length || LookupTable[c] == -1)
+            {
+                return false;
+            }
+
+            scrambled = (scrambled * 62) + (uint)LookupTable[c];
+        }
+
+        return scrambled <= uint.MaxValue;
+    }
+
     public int Decode(string code)
     {
         if (code is null || code.Length != 6)
