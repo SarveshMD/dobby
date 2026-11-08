@@ -1,17 +1,17 @@
 using Dobby.Validators;
 using FluentValidation.TestHelper;
 using Dobby.DTOs;
+using Dobby.Services;
 
 namespace Dobby.Tests.Validators;
 
 public class ShortUrlValidatorTests
 {
-    private readonly ShortUrlValidator _validator = new();
+    private readonly ShortUrlValidator _validator = new(new UrlShortener("1234567890"));
 
     [Theory]
-    [InlineData("aB3k9Z")]
     [InlineData("000000")]
-    [InlineData("ZZZZZZ")]
+    [InlineData("2lkCB1")]
     public void Validate_ValidShortUrl_ShouldNotHaveErrors(string validShortUrl)
     {
         // Arrange
@@ -84,5 +84,22 @@ public class ShortUrlValidatorTests
         validationResult
             .ShouldHaveValidationErrorFor(x => x.ShortUrl)
             .WithErrorMessage("ShortUrl contains invalid Base62 characters");
+    }
+
+    [Theory]
+    [InlineData("4GFfc4")]
+    [InlineData("ZZZZZZ")]
+    public void Validate_CodeOutsideSkip32Range_ShouldHaveValidationError(string invalidShortUrl)
+    {
+        // Arrange
+        var invalidShortUrlDto = new GetShortUrlRequest(invalidShortUrl);
+
+        // Act
+        var validationResult = _validator.TestValidate(invalidShortUrlDto);
+
+        // Assert
+        validationResult
+            .ShouldHaveValidationErrorFor(x => x.ShortUrl)
+            .WithErrorMessage("ShortUrl is outside the supported range");
     }
 }
