@@ -14,8 +14,6 @@ A high-performance, authenticated URL shortener built with ASP.NET Core Minimal 
 - **Identity & Security**: Custom JWT Bearer Auth with BCrypt password hashing
 - **Encoding Scheme**: Base62 (`[0-9a-zA-Z]`) mapping numeric sequences to 6-character short codes
 
----
-
 ## Roadmap & Implementation Order
 
 - [x] **Phase 1: Project Setup & Domain Modeling**
@@ -41,8 +39,6 @@ A high-performance, authenticated URL shortener built with ASP.NET Core Minimal 
   - Port zero-trust JWT Bearer authentication pipeline
   - Scope URL management and click metrics (`GET /api/urls/my`) to authenticated user identity
 
----
-
 ## API Endpoints
 
 ### Public
@@ -67,8 +63,6 @@ A high-performance, authenticated URL shortener built with ASP.NET Core Minimal 
 | :----- | :------------------- | :------------------------------------------------- | :---------------- | :------------------------- |
 | `POST` | `/api/auth/register` | Creates a new user profile with hashed credentials | `AuthResponseDto` | 201 Created / 409 Conflict |
 | `POST` | `/api/auth/login`    | Validates credentials and issues signed JWT        | `AuthResponseDto` | 200 Ok / 401 Unauthorized  |
-
----
 
 ## Running via Docker (Quick Start)
 
@@ -103,8 +97,6 @@ Alternatively, use docker to build the app locally from source and run it in dev
 ```bash
 docker compose -f compose.yml -f compose.dev.yml up -d --build
 ```
-
---
 
 ## Local Development (Running & Testing from Source)
 
@@ -167,8 +159,6 @@ dotnet watch --project src/Dobby
 
 The `.env` is read by Docker Compose only. The application does not read it.
 
---
-
 ## Unit and Integration Tests
 
 ### Prerequisites
@@ -181,3 +171,7 @@ From the project's root `dobby/`:
 ```bash
 dotnet test
 ```
+
+## Benchmarks
+
+Load test results (run via k6 against PostgreSQL and Redis) are documented in [`benchmarks/README.md`](./benchmarks/README.md).

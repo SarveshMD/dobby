@@ -16,7 +16,7 @@
         - **CPU**: Standard D4s v4 (4 vcpus, 2 threads per core)
         - **Memory**: 16 GiB
         - **OS**: ubuntu-24_04-lts server
-    - **Image**: `sarveshmd/dobby:1.0.0` (`docker-compose.prod.yml`)
+    - **Image**: `sarveshmd/dobby:1.0.0` (`compose.prod.yml`)
 - **Network:** Private Virtual Network (VNet) peering via internal private IP.
 
 | Benchmark Scenario                             | Concurrency   | Total Requests | Throughput (req/s) | Median Latency | p(90) Latency | p(95) Latency | Max Latency | Error Rate |
@@ -47,7 +47,7 @@
         - **CPU**: Standard D4s v4 (4 vcpus, 2 threads per core)
         - **Memory**: 16 GiB
         - **OS**: ubuntu-24_04-lts server
-    - **Image**: `sarveshmd/dobby:v2` (`docker-compose.prod.yml`)
+    - **Image**: `sarveshmd/dobby:v2` (`compose.prod.yml`)
 - **Network:** Private Virtual Network (VNet) peering via internal private IP.
 
 **Notes**
@@ -68,7 +68,7 @@
 
 ## 3. Impact of Redis Cache-Aside (PostgreSQL vs. Redis)
 
-_Both benchmarks executed on isolated Azure Two-VM VNet with `docker-compose.prod.yml`_
+_Both benchmarks executed on isolated Azure Two-VM VNet with `compose.prod.yml`_
 
 | Benchmark Scenario / Metric       | PostgreSQL Baseline | With Redis Cache | Delta / Impact                     |
 | :-------------------------------- | :------------------ | :--------------- | :--------------------------------- |
@@ -91,13 +91,13 @@ _Both benchmarks executed on isolated Azure Two-VM VNet with `docker-compose.pro
     - **Spike Test (300 VUs):** Max latency drops from **230.01 ms down to 93.84 ms (-59.2%)**.
 3. Write performance improved in `mixed_traffic.js`
     - Offloading 95% of redirect reads to Redis dropped write tail latency `p(95)` during mixed traffic from `10.11 ms down to 7.83 ms (-22.6%)`.
-    - Postgres had zero read requests on its connection pool and WAL flushes, letting the 5% writes commit with less queuing.
+    - Postgres had zero read requests on its connection pool (100% cache hit ratio), letting the 5% writes commit with less queuing.
 
 ## Local Single-Host Baseline (Reference)
 
 - **Notes**
     - These performance tests were run on a single machine with `k6`, `dobby`, and `postgres` running through `docker compose`.
-    - Initial runs showed unusually high latency because I ran the app in development environment (`docker-compose.yml`) instead of production (`docker-compose.prod.yml`).
+    - Initial runs showed unusually high latency because I ran the app in development environment (`compose.yml`) instead of production (`compose.prod.yml`).
     - Development environment logs every SQL query executed by EF Core to the console
     - The below statistics show a clean run re-tested with logging disabled.
 
@@ -105,7 +105,7 @@ _Both benchmarks executed on isolated Azure Two-VM VNet with `docker-compose.pro
     - **CPU**: 11th Gen Intel(R) Core(TM) i3-1115G4 @ 3.00GHz (2 cores, 4 threads)
     - **Memory**: 16 GiB memory
     - **OS**: Windows 11 Home
-    - **Image**: `sarveshmd/dobby:1.0.0` (`docker-compose.prod.yml`)
+    - **Image**: `sarveshmd/dobby:1.0.0` (`compose.prod.yml`)
 
 | Benchmark Scenario        | Concurrency   | Total Requests | Throughput (req/s) | Median Latency | p(90) Latency | p(95) Latency | Max Latency | Error Rate |
 | :------------------------ | :------------ | :------------- | :----------------- | :------------- | :------------ | :------------ | :---------- | :--------- |
