@@ -195,4 +195,90 @@ public class UrlEndpointsTests : BaseIntegrationTest
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+
+    [Fact]
+    public async Task GetUrl_WithoutAuthorization_Returns401Unauthorized()
+    {
+        // Arrange
+        string urlId = "42";
+
+        // Act
+        var response = await _client.GetAsync($"{_urlsEndpoint}/{urlId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task GetUrl_AuthorizedButNotOwned_Returns404NotFound()
+    {
+        // Arrange
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
+
+        string url = "https://www.youtube.com/watch?v=W2twcSFYlt0";
+        var anonymousUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_urlsEndpoint}/{anonymousUrl.Id}"
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetUrl_AuthorizedAndOwned_Returns200OkWithResponseUrlItemDto()
+    {
+        // Arrange
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
+
+        string url = "https://letterboxd.com/film/la-la-land/";
+        var userOwnedUrl = await IntegrationTestHelpers.CreateUrlItemAsync(_client, url, userBody.Token);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_urlsEndpoint}/{userOwnedUrl.Id}"
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var responseBody = await response.Content.ReadFromJsonAsync<ResponseUrlItemDto>();
+        responseBody.Should().BeEquivalentTo(userOwnedUrl);
+    }
+
+    [Theory]
+    [InlineData("NotValidUrlID")]
+    [InlineData("1014$")]
+    [InlineData("101492c")]
+    [InlineData(" 101492")]
+    [InlineData("101492 ")]
+    public async Task GetUrl_WithBadUrlId_Returns400BadRequest(string urlId)
+    {
+        string randUsername = IntegrationTestHelpers.RandomUsername();
+        var (_, _, userBody) = await IntegrationTestHelpers.CreateRegisteredUserAsync(_client, randUsername, _validPassword);
+
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"{_urlsEndpoint}/{Uri.EscapeDataString(urlId)}"
+        );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userBody.Token);
+
+        // Act
+        var response = await _client.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }
