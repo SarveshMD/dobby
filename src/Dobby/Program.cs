@@ -32,9 +32,7 @@ builder.Services.AddDbContext<UrlDbContext>(optionsBuilder =>
 
     if (builder.Environment.IsDevelopment())
     {
-        optionsBuilder
-            .EnableSensitiveDataLogging()
-            .LogTo(Console.WriteLine, LogLevel.Information);
+        optionsBuilder.EnableSensitiveDataLogging();
     }
 });
 
