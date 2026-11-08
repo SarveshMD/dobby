@@ -27,8 +27,16 @@ public static class UrlEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces<IEnumerable<ResponseUrlItemDto>>(StatusCodes.Status200OK);
 
+        group.MapGet("/my/{urlIdString}", GetMyUrlAsync)
+            .RequireAuthorization()
+            .ProducesValidationProblem()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status200OK);
+
         group.MapDelete("/{urlIdString}", DeleteUrlAsync)
             .RequireAuthorization()
+            .ProducesValidationProblem()
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status204NoContent);
@@ -108,6 +116,53 @@ public static class UrlEndpoints
                     urlShortenerService.Encode(x.Id)
                 )
             );
+
+        return Results.Ok(res);
+    }
+
+    private static async Task<IResult> GetMyUrlAsync(
+        string urlIdString,
+        IValidator<UrlIdDto> validator,
+        UrlDbContext db,
+        ClaimsPrincipal principal,
+        IUrlShortenerService urlShortenerService,
+        CancellationToken ct
+    )
+    {
+        var userId = principal.GetUserId();
+        var user = await db.Users
+            .AnyAsync(u => u.Id == userId, ct);
+
+        if (!user)
+        {
+            return Results.Unauthorized();
+        }
+
+        var validationResult = await validator.ValidateAsync(new UrlIdDto(urlIdString), ct);
+
+        if (!validationResult.IsValid)
+        {
+            return Results.ValidationProblem(validationResult.ToDictionary());
+        }
+
+        int urlId = int.Parse(urlIdString);
+
+        var urlItem = await db.UrlItems
+            .Where(x => x.UserId == userId)
+            .FirstOrDefaultAsync(x => x.Id == urlId, ct);
+
+        if (urlItem is null)
+        {
+            return Results.NotFound(new
+            {
+                message = "UrlItem with the given UrlId was not found",
+                urlId
+            });
+        }
+
+        string shortUrl = urlShortenerService.Encode(urlId);
+
+        var res = ResponseUrlItemDto.FromEntityAndShortUrl(urlItem, shortUrl);
 
         return Results.Ok(res);
     }
