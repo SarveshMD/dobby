@@ -154,9 +154,9 @@ public class UrlShortenerTests
     [InlineData("000000")]
     [InlineData("000001")]
     [InlineData("111111")]
-    [InlineData("2lkCB1")] // int.MaxVal in Base62
-    [InlineData("4GFfc2")] // uint.MaxVal - 1 in Base62
-    [InlineData("4GFfc3")] // uint.MaxVal in Base62
+    [InlineData("2lkCB1")] // int.MaxValue in Base62
+    [InlineData("4GFfc2")] // uint.MaxValue - 1 in Base62
+    [InlineData("4GFfc3")] // uint.MaxValue in Base62
     public void Decode_Base62CodesInsideSkip32Range_ShouldNotThrowArgumentOutOfRangeException(string validCode)
     {
         // Arrange
@@ -168,7 +168,7 @@ public class UrlShortenerTests
     }
 
     [Theory]
-    [InlineData("4GFfc4")] // uint.MaxVal + 1 in Base62
+    [InlineData("4GFfc4")] // uint.MaxValue + 1 in Base62
     [InlineData("4GFfc5")]
     [InlineData("500000")]
     [InlineData("a00000")]
@@ -181,5 +181,62 @@ public class UrlShortenerTests
 
         // Act and Assert
         act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("      ")]
+    [InlineData("abc")]
+    [InlineData("abc-de")]
+    [InlineData("1234567")]
+    [InlineData("123")]
+    [InlineData("1_2_3a")]
+    public void IsValidCode_InvalidCode_ReturnsFalse(string? code)
+    {
+        // Arrange
+        var sut = CreateSut();
+
+        // Act
+        var res = sut.IsValidCode(code!);
+
+        // Assert
+        res.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("000000")]
+    [InlineData("123456")]
+    [InlineData("2lkCB1")] // int.MaxValue
+    [InlineData("2lkCB2")] // int.MaxValue + 1
+    [InlineData("4GFfc2")] // uint.MaxValue - 1
+    [InlineData("4GFfc3")] // uint.MaxValue
+    public void IsValidCode_InRangeBase62Code_ReturnsTrue(string code)
+    {
+        // Arrange
+        var sut = CreateSut();
+
+        // Act
+        var res = sut.IsValidCode(code!);
+
+        // Assert
+        res.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("4GFfc4")] // uint.MaxValue + 1 in Base62
+    [InlineData("zzzzzz")]
+    [InlineData("ZZZZZZ")]
+    public void IsValidCode_OutOfRangeBase62Code_ReturnsFalse(string code)
+    {
+        // Arrange
+        var sut = CreateSut();
+
+        // Act
+        var res = sut.IsValidCode(code!);
+
+        // Assert
+        res.Should().BeFalse();
     }
 }
